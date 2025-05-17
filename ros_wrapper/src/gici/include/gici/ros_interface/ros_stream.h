@@ -42,7 +42,8 @@ enum class RosDataFormat {
   Odometry,
   NavSatFix,
   Marker,
-  Path
+  Path,
+  YoloDetection
 };
 
 // GNSS raw data format

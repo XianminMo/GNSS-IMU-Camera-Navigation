@@ -24,6 +24,11 @@ enum class CameraRole {
   Array
 };
 
+enum class YoloRole {
+  Primary,    // 主检测器
+  Secondary   // 辅助检测器（预留）
+};
+
 /// \brief Struct to define the behavior of the camera extrinsics.
 struct ExtrinsicsEstimationParameters
 {

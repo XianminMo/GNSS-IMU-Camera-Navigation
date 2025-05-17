@@ -628,6 +628,70 @@ void ImageDataIntegration::handleImage(const std::string& formator_tag,
   }
 }
 
+// Data callback
+void YoloDataIntegration::dataCallback(
+  const std::string& input_tag, const std::shared_ptr<DataCluster>& data)
+{ 
+  if (data->yoloDetections && valid_) {
+    mutex_.lock();
+    handleYOLO(input_tag, data->yoloDetections);
+    mutex_.unlock();
+  }
+}
+
+// Handle Image data
+void YoloDataIntegration::handleYOLO(const std::string& formator_tag, 
+                             const std::shared_ptr<std::vector<DataCluster::YoloDetection>& yoloDetections)
+{
+    // 1. 角色验证
+    if (behaviors_.find(formator_tag) == behaviors_.end()) {
+      LOG(ERROR) << "Formatter tag " << formator_tag << " not registered!";
+      return;
+    }
+
+    // 2. 解析角色配置
+    std::vector<YoloRole> roles;
+    for (const auto& behavior : behaviors_.at(formator_tag)) {
+      YoloRole role;
+      if (!option_tools::convert(behavior, role)) {
+        LOG(ERROR) << "Invalid YOLO role configuration";
+        return;
+      }
+      roles.push_back(role);
+    }
+
+    // 3. 检查角色有效性
+    if (roles.empty()) {
+      LOG(ERROR) << "No role specified for YOLO detector";
+      return;
+    }
+    if (roles.size() > 1) {
+      LOG(WARNING) << "Multi-role YOLO not fully supported, using first role";
+    }
+
+    // 4. 时间戳一致性检查
+    if (!detections->empty()) {
+      const double ref_time = detections->front().timestamp;
+      for (const auto& det : *detections) {
+        if (std::abs(det.timestamp - ref_time) > 1e-6) {
+          LOG(WARNING) << "Inconsistent timestamps in YOLO detections!";
+          break;
+        }
+      }
+    }
+
+    // 5. 构造数据包并触发回调
+    for (const auto& it_yolo_callback : estimator_callbacks_) {
+      EstimatorDataCluster data(
+          *detections,        // 传递检测结果vector
+          roles[0],           // 使用第一个有效角色
+          formator_tag.substr(4), // 去掉前缀的tag
+          detections->empty() ? 0 : detections->front().timestamp // 安全获取时间戳
+      );
+      it_yolo_callback(data);
+    }
+}
+
 // Solution data integration
 SolutionDataIntegration::SolutionDataIntegration(
   const std::shared_ptr<EstimatingBase>& estimating, 

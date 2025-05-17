@@ -36,7 +36,8 @@ enum class FormatorType {
   DcbFile,
   AtxFile, 
   Sp3File,
-  ClkFile
+  ClkFile,
+  YoloDetectionPack
 };
 
 // GNSS data types
@@ -95,6 +96,14 @@ public:
     uint8_t *image;
   };
 
+  // YoloDetection data format
+  struct YoloDetection {
+  cv::Rect_<float> bbox;     // 归一化边界框 (x_center, y_center, width, height)
+  float score;               // 置信度 [0,1]
+  int class_id;              // 类别ID 
+  double timestamp;          // 与图像同步的时间戳
+  };
+
   // IMU data format
   struct IMU {
     double time;
@@ -112,6 +121,7 @@ public:
   std::shared_ptr<Image> image;
   std::shared_ptr<IMU> imu;
   std::shared_ptr<Option> option;
+  std::shared_ptr<std::vector<YoloDetection>> yoloDetections;
 
   // Output data types
   std::shared_ptr<Solution> solution;

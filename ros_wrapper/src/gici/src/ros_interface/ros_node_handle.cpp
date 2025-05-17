@@ -241,6 +241,22 @@ void RosNodeHandle::rebindAllStreamerToEstimator(const NodeOptionHandlePtr& node
         }
         else image_streamings.push_back(stream);
       }
+      else if (option_tools::sensorType(roles[0]) == SensorType::YOLO) {
+        yoloDetection_tags.push_back(input_tag);
+        yoloDetection_roles.push_back(roles);
+        std::shared_ptr<Streaming> stream = is_ros ? 
+          getRosStreamFromTag(input_tag) : getStreamFromFormatorTag(input_tag);
+        if (!is_ros) {  
+          bool found = false;
+          for (auto streaming : yoloDetection_streamings) {
+            if (stream->getTag() == streaming->getTag()) {
+              found = true; break;
+            }
+          }
+          if (!found) yoloDetection_streamings.push_back(stream);
+        }
+        else yoloDetection_streamings.push_back(stream);
+      }      
       else if (option_tools::sensorType(roles[0]) == SensorType::GeneralSolution) {
         solution_tags.push_back(input_tag);
         solution_roles.push_back(roles);
@@ -267,6 +283,8 @@ void RosNodeHandle::rebindAllStreamerToEstimator(const NodeOptionHandlePtr& node
       estimating, imu_streamings, imu_tags, imu_roles));
     data_integrations.push_back(std::make_shared<ImageDataIntegration>(
       estimating, image_streamings, image_tags, image_roles));
+    data_integrations.push_back(std::make_shared<YoloDataIntegration>(
+      estimating, yoloDetection_streamings, yoloDetection_tags, yoloDetection_roles));  
     data_integrations.push_back(std::make_shared<SolutionDataIntegration>(
       estimating, solution_streamings, solution_tags, solution_roles));
     pushBatchBack(data_integrations_[i], data_integrations);

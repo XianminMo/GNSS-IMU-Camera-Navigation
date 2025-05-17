@@ -75,6 +75,17 @@ RosStream::RosStream(
       publishers_.push_back(nh_.advertise<sensor_msgs::Image>(topic_name_, queue_size_));
     }
   }
+  // 新增Yolo检测信息输入
+  else if (data_format == "yolo") {
+    data_format_ = RosDataFormat::YoloDetection;
+    if (io_type_ == StreamIOType::Input) {
+      subscribers_.push_back(nh_.subscribe<yolo_ros::DetectionMessages>(
+        topic_name_, queue_size_, boost::bind(&RosStream::yoloCallback, this, _1)));
+    }
+    else {
+      publishers_.push_back(nh_.advertise<yolo_ros::DetectionMessages>(topic_name_, queue_size_));
+    }
+  }
   else if (data_format == "imu") {
     data_format_ = RosDataFormat::Imu;
     if (io_type_ == StreamIOType::Input) {
@@ -519,6 +530,38 @@ void RosStream::imuCallback(const sensor_msgs::ImuConstPtr& msg)
   // Call INS processor
   for (auto it_imu_callback : data_callbacks_) {
     it_imu_callback(tag_, data_cluster);
+  }
+
+  // Call logger pipeline
+  for (auto pipeline : pipeline_ros_to_ros_) {
+    pipeline("", data_cluster);
+  }
+}
+
+void RosStream::yoloCallback(const yolo_ros::DetectionMessages::ConstPtr& msg) {
+    // Convert YoloDetection data
+    std::shared_ptr<DataCluster> data_cluster = 
+    std::make_shared<DataCluster>(FormatorType::YoloDetectionPack);
+
+  // 转换每个检测框
+  for (const auto& det : msg->data) {
+    YoloDetection yolo_det;
+    yolo_det.bbox = cv::Rect_<float>(
+      det.x1, det.y1, 
+      det.x2 - det.x1,   // width
+      det.y2 - det.y1    // height
+    );
+    yolo_det.score = det.score;
+    yolo_det.class_id = static_cast<int>(det.class_pred);
+    yolo_det.label = det.label;
+    yolo_det.timestamp = msg->header.stamp.toSec();
+    
+    data_cluster->yoloDetections->push_back(yolo_det);
+  }
+
+  // Call yolo processor
+  for (auto it_yolo_callback : data_callbacks_) {
+    it_yolo_callback(tag_, data_cluster);
   }
 
   // Call logger pipeline

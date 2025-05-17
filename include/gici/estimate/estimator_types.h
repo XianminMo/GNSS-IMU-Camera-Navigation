@@ -544,6 +544,12 @@ public:
     image_role(role), tag(tag), timestamp(time) {}
 
   EstimatorDataCluster(
+    const::shared_ptr<std::vector<DataCluster::YoloDetection>& data, const YoloRole& role, 
+                       const std::string& tag, const double time) :
+    yoloDetections(data),
+    yolo_role(role), tag(tag), timestamp(time) {}
+
+  EstimatorDataCluster(
     const FrameBundlePtr& data, const std::string& tag) : 
     frame_bundle(data), timestamp(data->getMinTimestampSeconds()),
     tag(tag) {}
@@ -559,6 +565,7 @@ public:
   std::shared_ptr<GnssMeasurement> gnss;
   std::shared_ptr<ImuMeasurement> imu;
   std::shared_ptr<cv::Mat> image;
+  std::shared_ptr<std::vector<DataCluster::YoloDetection> yoloDetections;
 
   // Intermediate processing data, which generated from other estimators
   // or frontend processors
@@ -570,6 +577,7 @@ public:
   ImuRole imu_role;
   CameraRole image_role;
   SolutionRole solution_role;
+  YoloRole yolo_role;
 
   // Common parameters
   std::string tag;

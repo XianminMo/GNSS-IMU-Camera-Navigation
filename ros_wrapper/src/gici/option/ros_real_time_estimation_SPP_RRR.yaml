@@ -29,6 +29,12 @@ stream:
       io: input
       format: image 
   - streamer:
+      tag: str_ros_yolo
+      type: ros
+      topic_name: /yolo_info
+      io: input
+      format: yolo
+  - streamer:
       tag: str_dcb_file
       output_tags: [fmt_dcb_file]
       type: file
@@ -98,11 +104,12 @@ estimate:
 - estimator:
     tag: est_gnss_imu_camera_rrr
     type: spp_imu_camera_rrr
-    input_tags: [str_ros_gnss_rov, str_ros_gnss_eph, fmt_dcb_file, str_ros_camera, str_ros_imu]
+    input_tags: [str_ros_gnss_rov, str_ros_gnss_eph, fmt_dcb_file, str_ros_camera, str_ros_imu, str_ros_yolo]
     str_ros_gnss_rov_roles: [rover]
     str_ros_gnss_eph_roles: [ephemeris]
     fmt_dcb_file_roles: [code_bias]
     str_ros_camera_roles: [mono]
+    str_ros_yolo_roles: [Primary]
     str_ros_imu_roles: [major]
     est_gnss_roles: [position]
     output_tags: [str_solution, str_solution_odometry, str_solution_path, str_featured_image, str_landmarks, fmt_solution_file]

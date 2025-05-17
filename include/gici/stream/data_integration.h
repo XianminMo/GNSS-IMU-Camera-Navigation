@@ -169,6 +169,26 @@ protected:
                    const std::shared_ptr<DataCluster::Image>& image);
 };
 
+// Yolo data integration
+class YoloDataIntegration : public DataIntegrationBase {
+public:
+  YoloDataIntegration(
+    const std::shared_ptr<EstimatingBase>& estimating,
+    const std::vector<std::shared_ptr<Streaming>>& streamings,
+    const std::vector<std::string>& tags,
+    const std::vector<std::vector<std::string>>& roles);
+    DataIntegrationBase(estimating, streamings, formator_tags, roles) {
+    valid_ = true;
+  }
+
+  void dataCallback(
+    const std::string& input_tag, const std::shared_ptr<DataCluster>& data) override;
+
+private:
+  void handleYOLO(
+    const std::string& formator_tag, c
+    onst std::shared_ptr<std::vector<YoloDetection>>& detections);
+};
 // Solution data integration
 class SolutionDataIntegration : public DataIntegrationBase {
 public:

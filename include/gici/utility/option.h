@@ -21,6 +21,7 @@ enum class SensorType {
   GNSS,
   IMU,
   Camera,
+  YOLO,
   GeneralSolution,
   Option
 };

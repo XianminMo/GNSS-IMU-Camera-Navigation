@@ -31,6 +31,10 @@ DataCluster::DataCluster(FormatorType type)
     imu = std::make_shared<IMU>();
     return;
   }
+  if (type == FormatorType::YoloDetectionPack) {
+    yoloDetections = std::make_shared<std::vector<YoloDetection>>();
+    return;
+  }
   if (type == FormatorType::OptionPack) {
     option = std::make_shared<Option>();
     return;

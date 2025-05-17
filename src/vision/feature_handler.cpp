@@ -16,6 +16,7 @@
 #include "gici/estimate/pose_error.h"
 #include "gici/vision/reprojection_error.h"
 #include "gici/imu/imu_error.h"
+#include <yolo_ros/DetectionMessages.h>
 
 namespace gici {
 
@@ -602,6 +603,28 @@ bool FeatureHandler::processFrameBundle()
   return processFrame();
 }
 
+void FeatureHandler::filterFeaturesByYOLO(const FramePtr& frame, const yolo_ros::DetectionMessagesConstPtr &yoloDetections)
+{
+    // 遍历当前帧的所有特征点
+    for (size_t i = 0; i < frame->num_features_; ++i)
+    {
+        const Eigen::Vector2d& px = frame->px_vec_.col(i); // 获取特征点的像素坐标
+        double x = px.x();
+        double y = px.y();
+
+        // 检查特征点是否在任意一个检测框内
+        for (const auto& detection : yoloDetections->data)
+        {
+            if (x >= detection.x1 && x <= detection.x2 && y >= detection.y1 && y <= detection.y2)
+            {
+                // 如果特征点在检测框内，将其标记为无效
+                frame->type_vec_[i] = FeatureType::kOutlier; // 标记为异常点
+                break; // 跳出检测框循环
+            }
+        }
+    }
+}
+
 // Processes frames
 bool FeatureHandler::processFrame()
 {
@@ -613,6 +636,9 @@ bool FeatureHandler::processFrame()
 
   // Detect features in new frame
   detectFeatures(getCurrent(frame_bundles_)->at(0));
+
+  // filter features by YOLO
+  filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0), yoloDetections_);
 
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;
