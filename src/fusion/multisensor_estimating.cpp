@@ -706,11 +706,15 @@ void MultiSensorEstimating::handleNonTimePropagationSensors(EstimatorDataCluster
 // Handle sensors that need frontends
 void MultiSensorEstimating::handleFrontendSensors(EstimatorDataCluster& data)
 {
-  CHECK(estimatorDataNeedFrontend(data));
+  // CHECK(estimatorDataNeedFrontend(data));
   if (data.image) {
     mutex_image_input_.lock();
     image_frontend_measurements_.push_back(data);
     mutex_image_input_.unlock();
+  } else if (data.yoloDetections) {
+    mutex_yolo_input_.lock();
+    yolo_frontend_measurements_.push_back(data);
+    mutex_yolo_input_.unlock();
   }
 }
 
@@ -879,6 +883,30 @@ void MultiSensorEstimating::runImageFrontend()
       spin.sleep(); continue;
     }
 
+    // YOLO检测信息匹配
+    std::vector<YoloDetection> yolo_dets;
+    mutex_yolo_input_.lock();
+    if (!yolo_frontend_measurements_.empty()) {
+        // 直接遍历所有元素，找到最近的
+        auto best_it = yolo_frontend_measurements_.begin();
+        double min_diff = std::abs(best_it->timestamp - front_measurement.timestamp);
+        
+        for (auto it = best_it + 1; it != yolo_frontend_measurements_.end(); ++it) {
+            double diff = std::abs(it->timestamp - front_measurement.timestamp);
+            if (diff < min_diff) {
+                min_diff = diff;
+                best_it = it;
+            }
+        }
+        
+        // 检查时间差是否在允许范围内(20ms)
+        if (min_diff < 0.02) {
+            yolo_dets = *(best_it->yoloDetections);
+            yolo_frontend_measurements_.erase(best_it);
+        }
+    }
+    mutex_yolo_input_.unlock();
+
     // Check if timestamp is valid
     if (!feature_handler_->isFirstFrame() && 
         feature_handler_->getFrameBundle()->getMinTimestampSeconds() >= 
@@ -916,7 +944,7 @@ void MultiSensorEstimating::runImageFrontend()
     image_frontend_measurements_.pop_front();
     mutex_image_input_.unlock();
     if (ret) {
-      ret = feature_handler_->processImageBundle();
+      ret = feature_handler_->processImageBundle(yolo_dets);
     }
     if (ret) {
       FrameBundlePtr frame_bundle = feature_handler_->getFrameBundle();

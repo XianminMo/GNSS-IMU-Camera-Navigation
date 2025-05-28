@@ -16,7 +16,7 @@
 #include "gici/estimate/pose_error.h"
 #include "gici/vision/reprojection_error.h"
 #include "gici/imu/imu_error.h"
-#include <yolo_ros/DetectionMessages.h>
+#include "gici/vision/yolo_types.h"
 
 namespace gici {
 
@@ -90,10 +90,10 @@ bool FeatureHandler::addImageBundle(const std::vector<std::shared_ptr<cv::Mat>>&
 } 
 
 // Process current added image bundle. Should be called after addImageBundle.
-bool FeatureHandler::processImageBundle()
+bool FeatureHandler::processImageBundle(const std::vector<YoloDetection>& yolo_detections)
 {
   // Perform detecting and tracking
-  bool ret = processFrameBundle();
+  bool ret = processFrameBundle(yolo_detections);
 
   // Shift memory
   frame_bundles_.push_back(std::make_shared<FrameBundle>(std::vector<FramePtr>()));
@@ -597,37 +597,65 @@ bool FeatureHandler::initializeScale()
 }
 
 // Processes frame bundle
-bool FeatureHandler::processFrameBundle()
+bool FeatureHandler::processFrameBundle(const std::vector<YoloDetection>& yolo_detections)
 {
   // currently we only support one camera
-  return processFrame();
+  return processFrame(yolo_detections);
 }
 
-void FeatureHandler::filterFeaturesByYOLO(const FramePtr& frame, const yolo_ros::DetectionMessagesConstPtr &yoloDetections)
+void FeatureHandler::filterFeaturesByYOLO(
+    const FramePtr& frame, 
+    const std::vector<YoloDetection>& yolo_detections)
 {
-    // 遍历当前帧的所有特征点
-    for (size_t i = 0; i < frame->num_features_; ++i)
-    {
-        const Eigen::Vector2d& px = frame->px_vec_.col(i); // 获取特征点的像素坐标
-        double x = px.x();
-        double y = px.y();
+    if (yolo_detections.empty() || frame->numFeatures() == 0) {
+        return;
+    }
 
-        // 检查特征点是否在任意一个检测框内
-        for (const auto& detection : yoloDetections->data)
-        {
-            if (x >= detection.x1 && x <= detection.x2 && y >= detection.y1 && y <= detection.y2)
-            {
-                // 如果特征点在检测框内，将其标记为无效
-                frame->type_vec_[i] = FeatureType::kOutlier; // 标记为异常点
-                break; // 跳出检测框循环
+    // 遍历所有特征点
+    for (size_t i = 0; i < frame->numFeatures(); ++i) {
+        const Eigen::Vector2d& px = frame->px_vec_.col(i);
+        cv::Point2f pt(px.x(), px.y());
+
+        // 检查特征点是否在动态物体检测框内
+        for (const auto& det : yolo_detections) {
+            // 只处理动态物体且置信度足够高的检测
+            if (!isDynamicObject(det.label) || det.score < 0.5) {
+                continue;
+            }
+
+            // 如果特征点在动态物体框内，标记为异常点
+            if (det.bbox.contains(pt)) {
+                frame->type_vec_[i] = FeatureType::kOutlier;
+                if (frame->landmark_vec_[i] != nullptr) {
+                    removeObservationFromPoint(frame->landmark_vec_[i], frame->id(), i);
+                }
+                break;
             }
         }
     }
 }
 
-// Processes frames
-bool FeatureHandler::processFrame()
+void FeatureHandler::removeObservationFromPoint(
+    PointPtr point, int frame_id, size_t feat_idx) 
 {
+    auto& obs = point->obs_;
+    obs.erase(std::remove_if(obs.begin(), obs.end(),
+        [&](const KeypointIdentifier& o) {
+            return o.frame_id == frame_id && o.keypoint_index_ == feat_idx;
+        }), obs.end());
+}
+
+// Processes frames
+bool FeatureHandler::processFrame(const std::vector<YoloDetection>& yolo_detections)
+{
+  // 更新YOLO检测结果
+  {
+      std::lock_guard<std::mutex> lock(yolo_mutex_);
+      if (!yolo_detections.empty()) {
+          last_yolo_detections_ = yolo_detections;
+      }
+  }
+
   // Reset grid
   detector_->grid_.reset();
 
@@ -637,8 +665,13 @@ bool FeatureHandler::processFrame()
   // Detect features in new frame
   detectFeatures(getCurrent(frame_bundles_)->at(0));
 
-  // filter features by YOLO
-  filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0), yoloDetections_);
+  // // 使用YOLO检测结果筛选特征点
+  // {
+  //     std::lock_guard<std::mutex> lock(yolo_mutex_);
+  //     if (!last_yolo_detections_.empty()) {
+  //         filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0), last_yolo_detections_);
+  //     }
+  // }
 
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;

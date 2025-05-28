@@ -1,0 +1,74 @@
+Traceback (most recent call last):
+  File "/opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py", line 50, in <module>
+    sys.argv, msg_template_map, srv_template_map)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 213, in generate_from_command_line_options
+    generate_from_file(argv[1], options.package, options.outdir, options.emdir, options.includepath, msg_template_dict, srv_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 154, in generate_from_file
+    _generate_msg_from_file(input_file, output_dir, template_dir, search_path, package_name, msg_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 99, in _generate_msg_from_file
+    search_path)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 77, in _generate_from_spec
+    interpreter = em.Interpreter(output=ofile, globals=g, options={em.RAW_OPT:True,em.BUFFERED_OPT:True})
+AttributeError: module 'em' has no attribute 'RAW_OPT'
+Traceback (most recent call last):
+  File "/opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py", line 50, in <module>
+    sys.argv, msg_template_map, srv_template_map)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 213, in generate_from_command_line_options
+    generate_from_file(argv[1], options.package, options.outdir, options.emdir, options.includepath, msg_template_dict, srv_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 154, in generate_from_file
+    _generate_msg_from_file(input_file, output_dir, template_dir, search_path, package_name, msg_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 99, in _generate_msg_from_file
+    search_path)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 77, in _generate_from_spec
+    interpreter = em.Interpreter(output=ofile, globals=g, options={em.RAW_OPT:True,em.BUFFERED_OPT:True})
+AttributeError: module 'em' has no attribute 'RAW_OPT'
+make[2]: *** [CMakeFiles/yolo_ros_generate_messages_cpp.dir/build.make:183: /home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloGoal.h] Error 1
+make[2]: *** Deleting file '/home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloGoal.h'
+make[2]: *** Waiting for unfinished jobs....
+Traceback (most recent call last):
+  File "/opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py", line 50, in <module>
+    sys.argv, msg_template_map, srv_template_map)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 213, in generate_from_command_line_options
+    generate_from_file(argv[1], options.package, options.outdir, options.emdir, options.includepath, msg_template_dict, srv_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 154, in generate_from_file
+    _generate_msg_from_file(input_file, output_dir, template_dir, search_path, package_name, msg_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 99, in _generate_msg_from_file
+    search_path)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 77, in _generate_from_spec
+    interpreter = em.Interpreter(output=ofile, globals=g, options={em.RAW_OPT:True,em.BUFFERED_OPT:True})
+AttributeError: module 'em' has no attribute 'RAW_OPT'
+Traceback (most recent call last):
+  File "/opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py", line 50, in <module>
+    sys.argv, msg_template_map, srv_template_map)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 213, in generate_from_command_line_options
+    generate_from_file(argv[1], options.package, options.outdir, options.emdir, options.includepath, msg_template_dict, srv_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 154, in generate_from_file
+    _generate_msg_from_file(input_file, output_dir, template_dir, search_path, package_name, msg_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 99, in _generate_msg_from_file
+    search_path)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 77, in _generate_from_spec
+    interpreter = em.Interpreter(output=ofile, globals=g, options={em.RAW_OPT:True,em.BUFFERED_OPT:True})
+AttributeError: module 'em' has no attribute 'RAW_OPT'
+make[2]: *** [CMakeFiles/yolo_ros_generate_messages_cpp.dir/build.make:136: /home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloAction.h] Error 1
+make[2]: *** Deleting file '/home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloAction.h'
+make[2]: *** [CMakeFiles/yolo_ros_generate_messages_cpp.dir/build.make:146: /home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloActionFeedback.h] Error 1
+make[2]: *** Deleting file '/home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloActionFeedback.h'
+make[2]: *** [CMakeFiles/yolo_ros_generate_messages_cpp.dir/build.make:156: /home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloActionGoal.h] Error 1
+make[2]: *** Deleting file '/home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloActionGoal.h'
+Traceback (most recent call last):
+  File "/opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py", line 50, in <module>
+    sys.argv, msg_template_map, srv_template_map)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 213, in generate_from_command_line_options
+    generate_from_file(argv[1], options.package, options.outdir, options.emdir, options.includepath, msg_template_dict, srv_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 154, in generate_from_file
+    _generate_msg_from_file(input_file, output_dir, template_dir, search_path, package_name, msg_template_dict)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 99, in _generate_msg_from_file
+    search_path)
+  File "/opt/ros/noetic/lib/python3/dist-packages/genmsg/template_tools.py", line 77, in _generate_from_spec
+    interpreter = em.Interpreter(output=ofile, globals=g, options={em.RAW_OPT:True,em.BUFFERED_OPT:True})
+AttributeError: module 'em' has no attribute 'RAW_OPT'
+make[2]: *** [CMakeFiles/yolo_ros_generate_messages_cpp.dir/build.make:169: /home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloActionResult.h] Error 1
+make[2]: *** Deleting file '/home/linux/mxm/proj/gici-open/ros_wrapper/devel/.private/yolo_ros/include/yolo_ros/yoloActionResult.h'
+make[1]: *** [CMakeFiles/Makefile2:1966: CMakeFiles/yolo_ros_generate_messages_cpp.dir/all] Error 2
+make[1]: *** Waiting for unfinished jobs....
+make: *** [Makefile:146: all] Error 2

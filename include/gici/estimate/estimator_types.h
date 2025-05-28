@@ -28,9 +28,11 @@
 #include "gici/vision/image_types.h"
 #include "gici/utility/option.h"
 #include "gici/estimate/graph.h"
+#include "gici/vision/yolo_types.h" 
 
 namespace gici {
 
+class DataCluster;
 // -----------------------------------------------------------------------------
 // IDs
 enum class IdType : uint8_t
@@ -512,6 +514,7 @@ struct Solution {
   GeoCoordinatePtr coordinate;
 };
 
+
 // Role of solution when it behaves as measurement (for loosely couple)
 enum class SolutionRole {
   None,
@@ -544,7 +547,7 @@ public:
     image_role(role), tag(tag), timestamp(time) {}
 
   EstimatorDataCluster(
-    const::shared_ptr<std::vector<DataCluster::YoloDetection>& data, const YoloRole& role, 
+    const std::shared_ptr<std::vector<YoloDetection>>& data, const YoloRole& role, 
                        const std::string& tag, const double time) :
     yoloDetections(data),
     yolo_role(role), tag(tag), timestamp(time) {}
@@ -565,7 +568,7 @@ public:
   std::shared_ptr<GnssMeasurement> gnss;
   std::shared_ptr<ImuMeasurement> imu;
   std::shared_ptr<cv::Mat> image;
-  std::shared_ptr<std::vector<DataCluster::YoloDetection> yoloDetections;
+  std::shared_ptr<std::vector<YoloDetection>> yoloDetections;
 
   // Intermediate processing data, which generated from other estimators
   // or frontend processors

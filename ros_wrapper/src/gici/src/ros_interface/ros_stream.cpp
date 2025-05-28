@@ -11,9 +11,11 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <yolo_ros/DetectionMessages.h> 
 
 #include "gici/utility/spin_control.h"
 #include "gici/gnss/gnss_common.h"
+
 
 namespace gici {
 

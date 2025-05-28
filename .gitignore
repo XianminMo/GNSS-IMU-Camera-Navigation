@@ -58,3 +58,4 @@ data*/
 bin/
 lib/
 *.atx
+ros_wrapper/src/yolo_ros

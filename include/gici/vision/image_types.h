@@ -26,7 +26,8 @@ enum class CameraRole {
 
 enum class YoloRole {
   Primary,    // 主检测器
-  Secondary   // 辅助检测器（预留）
+  Secondary,  // 辅助检测器（预留）
+  None   
 };
 
 /// \brief Struct to define the behavior of the camera extrinsics.

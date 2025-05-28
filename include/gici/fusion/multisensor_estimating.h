@@ -152,7 +152,7 @@ private:
 
   // Check if the data needs a frontend
   inline bool estimatorDataNeedFrontend(const EstimatorDataCluster& data) {
-    return (data.image != nullptr);
+    return (data.image != nullptr || data.yoloDetections != nullptr);
   }
 
   // Check if the data will be used for time propagation (only support IMU)
@@ -183,7 +183,7 @@ protected:
   int last_backend_pending_num_ = 0;
   // the frontend measurements should be processd by frontend, and the output of frontend will 
   // be inserted into measurements_.
-  std::deque<EstimatorDataCluster> image_frontend_measurements_; 
+  std::deque<EstimatorDataCluster> image_frontend_measurements_, yolo_frontend_measurements_; 
   int last_image_pending_num_ = 0;
   // buffer to temporarily store measurements in case the input stream blocking
   std::deque<EstimatorDataCluster> measurement_addin_buffer_;
@@ -191,7 +191,7 @@ protected:
   std::deque<EstimatorDataCluster> measurement_align_buffer_;
   double latest_imu_timestamp_;
   // mutex to lock buffers and processes
-  std::mutex mutex_addin_, mutex_input_, mutex_image_input_;
+  std::mutex mutex_addin_, mutex_input_, mutex_image_input_, mutex_yolo_input_;
   std::mutex mutex_output_;
 
   // Options

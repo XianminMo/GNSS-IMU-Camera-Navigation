@@ -17,6 +17,7 @@
 #include "gici/vision/visual_initialization.h"
 #include "gici/utility/common.h"
 #include "gici/imu/imu_estimator_base.h"
+#include "gici/vision/yolo_types.h"
 
 namespace gici {
 
@@ -89,7 +90,7 @@ public:
                       const double timestamp, const std::vector<Transformation>& T_WSs);
 
   // Process current added image bundle. Should be called after addImageBundle.
-  bool processImageBundle();
+  bool processImageBundle(const std::vector<YoloDetection>& yolo_detections = {});
 
   // Initialize landmarks 
   void initializeLandmarks(const FramePtr& keyframe);
@@ -179,10 +180,26 @@ private:
   bool initializeScale();
 
   // Processes frame bundle
-  bool processFrameBundle();
+  bool processFrameBundle(const std::vector<YoloDetection>& yolo_detections = {});
 
   // Processes frames
-  bool processFrame();
+  bool processFrame(const std::vector<YoloDetection>& yolo_detections = {});
+
+  void filterFeaturesByYOLO(
+    const FramePtr& frame, 
+    const std::vector<YoloDetection>& yolo_detections);
+
+  void removeObservationFromPoint(PointPtr point, int frame_id, size_t feat_idx);
+
+  // 动态物体标签列表（可根据需要扩展）
+  const std::unordered_set<std::string> dynamic_labels_ = {
+      "person", "cat", "dog", "bicycle", "car", "bus"
+  };
+  
+  // 辅助函数：检查是否动态物体
+  bool isDynamicObject(const std::string& label) const {
+      return dynamic_labels_.find(label) != dynamic_labels_.end();
+  }
 
 protected:
   // Options
@@ -190,6 +207,10 @@ protected:
 
   // Camera model
   CameraBundlePtr cams_;
+  
+  // YOLO
+  std::vector<YoloDetection> last_yolo_detections_;
+  std::mutex yolo_mutex_;
 
   // Frames
   std::deque<FrameBundlePtr> frame_bundles_;

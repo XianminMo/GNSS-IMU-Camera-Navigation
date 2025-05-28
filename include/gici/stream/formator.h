@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <glog/logging.h>
+#include <opencv2/core.hpp>
 
 #include "gici/stream/format_image.h"
 #include "gici/stream/format_imu.h"
@@ -18,6 +19,7 @@
 #include "gici/utility/rtklib_safe.h"
 #include "gici/estimate/estimator_types.h"
 #include "gici/gnss/code_bias.h"
+#include "gici/vision/yolo_types.h"
 
 namespace gici {
 
@@ -94,14 +96,6 @@ public:
     int height;
     int step;
     uint8_t *image;
-  };
-
-  // YoloDetection data format
-  struct YoloDetection {
-  cv::Rect_<float> bbox;     // 归一化边界框 (x_center, y_center, width, height)
-  float score;               // 置信度 [0,1]
-  int class_id;              // 类别ID 
-  double timestamp;          // 与图像同步的时间戳
   };
 
   // IMU data format

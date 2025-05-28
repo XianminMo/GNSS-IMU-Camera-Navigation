@@ -181,10 +181,10 @@ void RosNodeHandle::rebindAllStreamerToEstimator(const NodeOptionHandlePtr& node
     CHECK(input_tags.size() == input_tag_roles.size());
 
     // distinguish sensors
-    std::vector<std::string> gnss_tags, imu_tags, image_tags, solution_tags;
-    std::vector<std::vector<std::string>> gnss_roles, imu_roles, image_roles, solution_roles;
+    std::vector<std::string> gnss_tags, imu_tags, image_tags, yoloDetection_tags, solution_tags;
+    std::vector<std::vector<std::string>> gnss_roles, imu_roles, image_roles, yoloDetection_roles, solution_roles;
     std::vector<std::shared_ptr<Streaming>> 
-      gnss_streamings, imu_streamings, image_streamings, solution_streamings;
+      gnss_streamings, imu_streamings, image_streamings, solution_streamings, yoloDetection_streamings;
     for (size_t i = 0; i < input_tags.size(); i++) {
       const std::string& input_tag = input_tags[i];
       const std::vector<std::string>& roles = input_tag_roles[i];

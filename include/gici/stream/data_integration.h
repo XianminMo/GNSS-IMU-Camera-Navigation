@@ -12,6 +12,7 @@
 #include "gici/stream/files_reading.h"
 #include "gici/estimate/estimating.h"
 
+
 namespace gici {
 
 // Base class
@@ -175,8 +176,8 @@ public:
   YoloDataIntegration(
     const std::shared_ptr<EstimatingBase>& estimating,
     const std::vector<std::shared_ptr<Streaming>>& streamings,
-    const std::vector<std::string>& tags,
-    const std::vector<std::vector<std::string>>& roles);
+    const std::vector<std::string>& formator_tags,
+    const std::vector<std::vector<std::string>>& roles) :
     DataIntegrationBase(estimating, streamings, formator_tags, roles) {
     valid_ = true;
   }
@@ -186,8 +187,8 @@ public:
 
 private:
   void handleYOLO(
-    const std::string& formator_tag, c
-    onst std::shared_ptr<std::vector<YoloDetection>>& detections);
+    const std::string& formator_tag,
+    const std::shared_ptr<std::vector<YoloDetection>>& detections);
 };
 // Solution data integration
 class SolutionDataIntegration : public DataIntegrationBase {

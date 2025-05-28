@@ -150,6 +150,15 @@ void convert<std::string, CameraRole>
 }
 
 template <>
+void convert<std::string, YoloRole>
+  (const std::string& in, YoloRole& out)
+{
+  MAP_IN_OUT("primary", YoloRole::Primary);
+  MAP_IN_OUT("secondary", YoloRole::Secondary);
+  LOG_INVALId;
+}
+
+template <>
 void convert<std::string, EstimatorType>
   (const std::string& in, EstimatorType& out)
 {

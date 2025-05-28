@@ -639,58 +639,56 @@ void YoloDataIntegration::dataCallback(
   }
 }
 
-// Handle Image data
+// Handle YOLO data
 void YoloDataIntegration::handleYOLO(const std::string& formator_tag, 
-                             const std::shared_ptr<std::vector<DataCluster::YoloDetection>& yoloDetections)
+                             const std::shared_ptr<std::vector<YoloDetection>>& yoloDetections)
 {
-    // 1. 角色验证
-    if (behaviors_.find(formator_tag) == behaviors_.end()) {
-      LOG(ERROR) << "Formatter tag " << formator_tag << " not registered!";
+  // Get role
+  if (behaviors_.find(formator_tag) == behaviors_.end()) {
+    LOG(ERROR) << "Formator tag " << formator_tag << " not registered!";
+    return;
+  }
+  
+  // Parse roles
+  std::vector<YoloRole> roles;
+  bool has_valid_role = false;
+  for (size_t i = 0; i < behaviors_.at(formator_tag).size(); i++) {
+    roles.push_back(YoloRole());
+    option_tools::convert(behaviors_.at(formator_tag)[i], roles[i]);
+    if (roles[i] == YoloRole::None || roles[i] == YoloRole::Secondary) {
+      LOG(WARNING) << "Invalid YOLO role configuration";
       return;
     }
+    if (roles[i] == YoloRole::Primary) has_valid_role = true;
+  }
 
-    // 2. 解析角色配置
-    std::vector<YoloRole> roles;
-    for (const auto& behavior : behaviors_.at(formator_tag)) {
-      YoloRole role;
-      if (!option_tools::convert(behavior, role)) {
-        LOG(ERROR) << "Invalid YOLO role configuration";
-        return;
-      }
-      roles.push_back(role);
-    }
+  
+  // Validate roles
+  if (!has_valid_role) {
+    LOG(ERROR) << "No valid role specified for YOLO detector";
+    return;
+  }
+  
+  if (roles.size() > 1) {
+    LOG(WARNING) << "Multi-role YOLO not fully supported, using first role";
+  }
+  else if (roles.empty()) {
+    LOG(ERROR) << "No role for current YOLO detector was specified!";
+    return;
+  }
 
-    // 3. 检查角色有效性
-    if (roles.empty()) {
-      LOG(ERROR) << "No role specified for YOLO detector";
-      return;
-    }
-    if (roles.size() > 1) {
-      LOG(WARNING) << "Multi-role YOLO not fully supported, using first role";
-    }
-
-    // 4. 时间戳一致性检查
-    if (!detections->empty()) {
-      const double ref_time = detections->front().timestamp;
-      for (const auto& det : *detections) {
-        if (std::abs(det.timestamp - ref_time) > 1e-6) {
-          LOG(WARNING) << "Inconsistent timestamps in YOLO detections!";
-          break;
-        }
-      }
-    }
-
-    // 5. 构造数据包并触发回调
-    for (const auto& it_yolo_callback : estimator_callbacks_) {
-      EstimatorDataCluster data(
-          *detections,        // 传递检测结果vector
-          roles[0],           // 使用第一个有效角色
-          formator_tag.substr(4), // 去掉前缀的tag
-          detections->empty() ? 0 : detections->front().timestamp // 安全获取时间戳
-      );
-      it_yolo_callback(data);
-    }
+  // Prepare data and trigger callback
+  for (const auto& callback : estimator_callbacks_) {
+    EstimatorDataCluster estimator_data(
+      yoloDetections,  // 保持 shared_ptr 传递，与 handleImage 一致
+      roles[0],
+      formator_tag.substr(4),
+      yoloDetections->empty() ? 0.0 : yoloDetections->front().timestamp
+    );
+    callback(estimator_data);
+  }
 }
+
 
 // Solution data integration
 SolutionDataIntegration::SolutionDataIntegration(

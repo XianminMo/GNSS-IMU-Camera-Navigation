@@ -5,27 +5,27 @@ stream:
       tag: str_gnss_rov
       output_tags: [fmt_gnss_rov]
       type: file
-      path: <data-directory>/gnss_rover.bin
+      path: /home/linux/mxm/data/4.1/gnss_rover.bin
   - streamer:
       tag: str_gnss_ref
       output_tags: [fmt_gnss_ref]
       type: file
-      path: <data-directory>/gnss_reference.bin
+      path: /home/linux/mxm/data/4.1/gnss_reference.bin
   - streamer:
       tag: str_gnss_eph
       output_tags: [fmt_gnss_eph]
       type: file
-      path: <data-directory>/gnss_ephemeris.bin
+      path: /home/linux/mxm/data/4.1/gnss_ephemeris.bin
   - streamer:
       tag: str_imu
       output_tags: [fmt_imu]
       type: file
-      path: <data-directory>/imu.bin
+      path: /home/linux/mxm/data/4.1/imu.bin
   - streamer:
       tag: str_camera
       output_tags: [fmt_camera]
       type: file
-      path: <data-directory>/camera.bin
+      path: /home/linux/mxm/data/4.1/camera.bin
       buffer_length: 361472  # 752 * 480 + 512 
 
   formators:
@@ -38,12 +38,12 @@ stream:
       io: input
       tag: fmt_gnss_ref
       type: gnss-rtcm-3
-      start_time: 2023.03.20
+      start_time: 2023.05.21
   - formator:
       io: input
       tag: fmt_gnss_eph
       type: gnss-rtcm-3
-      start_time: 2023.03.20
+      start_time: 2023.05.21
   - formator:
       io: input
       tag: fmt_imu
@@ -60,7 +60,7 @@ rosbags:
     tag: rosbag_gnss_rov
     type: rosbag
     input_tags: [fmt_gnss_rov]
-    path: <data-directory>/gnss_rover.bag
+    path: /home/linux/mxm/data/4.1/rosbag/gnss_rover.bag
     topic_name: /gici/gnss_rover
     format: gnss_raw
     enable_observation: true
@@ -68,7 +68,7 @@ rosbags:
     tag: rosbag_gnss_ref
     type: rosbag
     input_tags: [fmt_gnss_ref]
-    path: <data-directory>/gnss_reference.bag
+    path: /home/linux/mxm/data/4.1/rosbag/gnss_reference.bag
     topic_name: /gici/gnss_reference
     format: gnss_raw
     enable_observation: true
@@ -77,7 +77,7 @@ rosbags:
     tag: rosbag_gnss_eph
     type: rosbag
     input_tags: [fmt_gnss_eph]
-    path: <data-directory>/gnss_ephemeris.bag
+    path: /home/linux/mxm/data/4.1/rosbag/gnss_ephemeris.bag
     topic_name: /gici/gnss_ephemeris
     format: gnss_raw
     enable_ephemeris: true
@@ -86,13 +86,13 @@ rosbags:
     tag: rosbag_imu
     type: rosbag
     input_tags: [fmt_imu]
-    path: <data-directory>/imu.bag
+    path: /home/linux/mxm/data/4.1/rosbag/imu.bag
     topic_name: /gici/imu_raw
     format: imu
 - rosbag: 
     tag: rosbag_camera
     type: rosbag
     input_tags: [fmt_camera]
-    path: <data-directory>/image.bag
+    path: /home/linux/mxm/data/4.1/rosbag/image.bag
     topic_name: /gici/image_raw
     format: image

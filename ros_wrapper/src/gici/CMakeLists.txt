@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   message_generation
+  yolo_ros
 )
 
 add_message_files(

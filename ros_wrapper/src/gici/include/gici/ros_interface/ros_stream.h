@@ -29,6 +29,7 @@
 #include "gici/stream/node_handle.h"
 #include "gici/estimate/estimating.h"
 #include "gici/ros_interface/ros_publisher.h"
+#include "yolo_ros/DetectionMessages.h"
 
 namespace gici {
 
@@ -115,6 +116,7 @@ private:
   // ROS callbacks
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
   void imuCallback(const sensor_msgs::ImuConstPtr& msg);
+  void yoloCallback(const yolo_ros::DetectionMessages::ConstPtr& msg);
   void gnssObservationsCallback(const gici_ros::GnssObservationsConstPtr& msg);
   void gnssEphemeridesCallback(const gici_ros::GnssEphemeridesConstPtr& msg);
   void gnssAntennaPositionCallback(const gici_ros::GnssAntennaPositionConstPtr& msg);
