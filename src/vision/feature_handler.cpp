@@ -324,6 +324,10 @@ void FeatureHandler::optimizePose()
     std::make_shared<ceres::CauchyLoss>(1);
 
   // Approximate pose
+  // 初始位姿估计：​基础估计​：使用上一帧位姿 T_world_imu() 作为初始值，​运动外推​（当有足够历史帧时）
+  // 计算连续两帧间的平移变化量 t_last_cur
+  // 根据时间间隔比例 (dt2/dt1) 外推当前帧运动
+  // 公式：T_current ≈ T_last * (T_last_to_prev * time_ratio)
   FramePtr last_frame = getLast(frame_bundles_)->at(0);
   Transformation T_WS_aprox = last_frame->T_world_imu();
   if (frame_bundles_.size() > 2) {

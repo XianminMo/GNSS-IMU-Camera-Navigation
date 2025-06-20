@@ -190,7 +190,9 @@ inline bool ReprojectionError::EvaluateWithMinimalJacobians(
   // check validity:
   bool valid = true;
   if (fabs(hp_C[3]) > 1.0e-8)
-  {
+  { 
+    // 将4维齐次向量转成3维的相机坐标系下的坐标，(X, Y, Z) = (x, y, z) / w
+    // 这里的w是齐次坐标的第四个分量  
     Eigen::Vector3d p_C = hp_C.template head<3>() / hp_C[3];
     if (p_C[2] < 0.2)
     {
