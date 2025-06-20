@@ -623,26 +623,30 @@ void FeatureHandler::filterFeaturesByYOLO(
                 continue;
             }
 
-            // 如果特征点在动态物体框内，标记为异常点
-            if (det.bbox.contains(pt)) {
-                frame->type_vec_[i] = FeatureType::kOutlier;
-                if (frame->landmark_vec_[i] != nullptr) {
-                    removeObservationFromPoint(frame->landmark_vec_[i], frame->id(), i);
-                }
-                break;
+            // 计算检测框的中心区域和边缘区域
+            cv::Rect center_bbox = det.bbox;
+            center_bbox.x += det.bbox.width * 0.1;  // 缩小10%
+            center_bbox.y += det.bbox.height * 0.1;
+            center_bbox.width *= 0.8;
+            center_bbox.height *= 0.8;
+
+            cv::Rect edge_bbox = det.bbox;
+            edge_bbox.x += det.bbox.width * 0.05;  // 缩小5%
+            edge_bbox.y += det.bbox.height * 0.05;
+            edge_bbox.width *= 0.9;
+            edge_bbox.height *= 0.9;
+
+            // 根据特征点位置赋予权重
+            if (center_bbox.contains(pt)) {
+                frame->weight_vec_[i] = 0.0; // 高概率动态物体
+                frame->type_vec_[i] = FeatureType::kOutlier; // 标记为异常点
+            } else if (edge_bbox.contains(pt)) {
+                frame->weight_vec_[i] = 0.5; // 边缘区域，可能是背景
+            } else if (det.bbox.contains(pt)) {
+                frame->weight_vec_[i] = 0.8; // 靠近边缘，可能是遮挡
             }
         }
     }
-}
-
-void FeatureHandler::removeObservationFromPoint(
-    PointPtr point, int frame_id, size_t feat_idx) 
-{
-    auto& obs = point->obs_;
-    obs.erase(std::remove_if(obs.begin(), obs.end(),
-        [&](const KeypointIdentifier& o) {
-            return o.frame_id == frame_id && o.keypoint_index_ == feat_idx;
-        }), obs.end());
 }
 
 // Processes frames
@@ -665,13 +669,13 @@ bool FeatureHandler::processFrame(const std::vector<YoloDetection>& yolo_detecti
   // Detect features in new frame
   detectFeatures(getCurrent(frame_bundles_)->at(0));
 
-  // // 使用YOLO检测结果筛选特征点
-  // {
-  //     std::lock_guard<std::mutex> lock(yolo_mutex_);
-  //     if (!last_yolo_detections_.empty()) {
-  //         filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0), last_yolo_detections_);
-  //     }
-  // }
+  // 使用YOLO检测结果筛选特征点
+  {
+      std::lock_guard<std::mutex> lock(yolo_mutex_);
+      if (!last_yolo_detections_.empty()) {
+          filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0), last_yolo_detections_);
+      }
+  }
 
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;

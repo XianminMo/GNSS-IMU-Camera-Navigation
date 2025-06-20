@@ -68,6 +68,7 @@ public:
   Gradients grad_vec_;          ///< Gradient direction of edgelet normal
   FeatureTypes type_vec_;       ///< Is the feature a corner or an edgelet?
   Landmarks landmark_vec_;      ///< Reference to 3D point. Can contain nullpointers!
+  std::vector<FloatType> weight_vec_; ///< 权重向量，用于存储每个特征点的权重
   TrackIds track_id_vec_;       ///< ID of every observed 3d point. -1 if no point assigned.
   SeedRefs seed_ref_vec_;       ///< Only for seeds during reprojection
   SeedStates invmu_sigma2_a_b_vec_; ///< Vector containing all necessary information for seed update.

@@ -107,6 +107,7 @@ void Frame::resizeFeatureStorage(size_t num)
 
     type_vec_.resize(num, FeatureType::kCorner);
     landmark_vec_.resize(num, nullptr);
+    weight_vec_.resize(num, 1.0); // 默认权重为 1.0
     seed_ref_vec_.resize(num);
     in_ba_graph_vec_.resize(num, false);
 
