@@ -626,7 +626,7 @@ void FeatureHandler::filterFeaturesByYOLO(
             // 如果特征点在动态物体框内，标记为异常点，并解除与地标的关联
             if (det.bbox.contains(pt)) {
                 frame->type_vec_[i] = FeatureType::kOutlier;
-                deleteLandmark(i);
+                frame->deleteLandmark(i);
                 break;
             }
         }

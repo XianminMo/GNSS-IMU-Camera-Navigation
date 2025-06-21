@@ -44,7 +44,7 @@ stream:
       tag: str_solution_file
       input_tags: [fmt_solution_file]
       type: file
-      path: /home/linux/mxm/proj/gici-open/output/4.1/SPP_RRR/spp_rrr_solution.txt
+      path: /home/linux/mxm/proj/gici-open/output/4.1/SPP_RRR/spp_rrr_solution_yolo.txt
       enable_time_tag: false
   - streamer:
       tag: str_solution
