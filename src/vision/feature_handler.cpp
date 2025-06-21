@@ -653,6 +653,7 @@ bool FeatureHandler::processFrame(const std::vector<YoloDetection>& yolo_detecti
       std::lock_guard<std::mutex> lock(yolo_mutex_);
       if (!yolo_detections.empty()) {
           last_yolo_detections_ = yolo_detections;
+          printf("Received %zu YOLO detections.\n", yolo_detections.size());
       }
   }
 
