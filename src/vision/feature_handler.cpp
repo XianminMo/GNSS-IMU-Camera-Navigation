@@ -603,48 +603,6 @@ bool FeatureHandler::processFrameBundle(const std::vector<YoloDetection>& yolo_d
   return processFrame(yolo_detections);
 }
 
-void FeatureHandler::filterFeaturesByYOLO(
-    const FramePtr& frame, 
-    const std::vector<YoloDetection>& yolo_detections)
-{
-    if (yolo_detections.empty() || frame->numFeatures() == 0) {
-        return;
-    }
-
-    // 遍历所有特征点
-    for (size_t i = 0; i < frame->numFeatures(); ++i) {
-        const Eigen::Vector2d& px = frame->px_vec_.col(i);
-        cv::Point2f pt(px.x(), px.y());
-
-        // 检查特征点是否在动态物体检测框内
-        for (const auto& det : yolo_detections) {
-            // 只处理动态物体且置信度足够高的检测
-            if (!isDynamicObject(det.label) || det.score < 0.5) {
-                continue;
-            }
-
-            // 如果特征点在动态物体框内，标记为异常点
-            if (det.bbox.contains(pt)) {
-                frame->type_vec_[i] = FeatureType::kOutlier;
-                if (frame->landmark_vec_[i] != nullptr) {
-                    removeObservationFromPoint(frame->landmark_vec_[i], frame->id(), i);
-                }
-                break;
-            }
-        }
-    }
-}
-
-void FeatureHandler::removeObservationFromPoint(
-    PointPtr point, int frame_id, size_t feat_idx) 
-{
-    auto& obs = point->obs_;
-    obs.erase(std::remove_if(obs.begin(), obs.end(),
-        [&](const KeypointIdentifier& o) {
-            return o.frame_id == frame_id && o.keypoint_index_ == feat_idx;
-        }), obs.end());
-}
-
 // Processes frames
 bool FeatureHandler::processFrame(const std::vector<YoloDetection>& yolo_detections)
 {
@@ -664,14 +622,6 @@ bool FeatureHandler::processFrame(const std::vector<YoloDetection>& yolo_detecti
 
   // Detect features in new frame
   detectFeatures(getCurrent(frame_bundles_)->at(0));
-
-  // // 使用YOLO检测结果筛选特征点
-  // {
-  //     std::lock_guard<std::mutex> lock(yolo_mutex_);
-  //     if (!last_yolo_detections_.empty()) {
-  //         filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0), last_yolo_detections_);
-  //     }
-  // }
 
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;
