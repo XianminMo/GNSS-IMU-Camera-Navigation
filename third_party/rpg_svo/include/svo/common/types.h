@@ -70,7 +70,8 @@ enum class FeatureType : uint8_t
   kCorner = 7,
   kMapPoint = 8,
   kFixedLandmark = 9,
-  kOutlier = 10
+  kOutlier = 10,
+  kDynamic = 11 // 动态特征点，可能会被删除或更新
 };
 
 using FeatureTypes = std::vector<FeatureType>;

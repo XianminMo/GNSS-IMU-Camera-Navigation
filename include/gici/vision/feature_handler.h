@@ -189,11 +189,10 @@ private:
     const FramePtr& frame, 
     const std::vector<YoloDetection>& yolo_detections);
   
-  double calculateDynamicRisk(const Eigen::Vector2d& pt,
+  double calculateDynamicRisk(const cv::Point2f& pt,
                            const cv::Rect& bbox,
                            float det_score);
 
-  void removeObservationFromPoint(PointPtr point, int frame_id, size_t feat_idx);
 
   // 动态物体标签列表（可根据需要扩展）
   const std::unordered_set<std::string> dynamic_labels_ = {

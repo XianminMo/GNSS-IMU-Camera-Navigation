@@ -387,7 +387,7 @@ void FeatureHandler::optimizePose()
     if (global_scale_initialized_ && !landmark->in_ba_graph_) information /= 1.0e4;
     
     // 根据kp的权重去修改信息矩阵，初始为1.0，若在检测框中则会根据kp的位置赋予不同的权重
-    information *= frame->weight_vec_(kp_idx);
+    information *= frame->weight_vec_[kp_idx];
     
     // 代价函数（重投影误差）构建
     std::shared_ptr<ReprojectionError> reprojection_error =
@@ -648,24 +648,24 @@ void FeatureHandler::filterFeaturesByYOLO(
         
         // 应用动态加权
         if (in_dynamic_bbox) {
-            frame->weights[i] = min_weight;
+            frame->weight_vec_[i] = min_weight;
             
             // 核心区域点标记为可疑（非立即删除），后续做进一步的运动一致性检查
             if (min_weight < 0.3) {
-                frame->types[i] = FeatureType::kSuspect;
+                frame->type_vec_[i] = FeatureType::kDynamic;
             }
         }
       }
 }
 
 // 双风险模型计算kp的动态风险指数，仅基于位置信息，后续考虑融合其他信息（如速度、加速度等）
-double calculateDynamicRisk(const Eigen::Vector2d& pt,
+double FeatureHandler::calculateDynamicRisk(const cv::Point2f& pt,
                            const cv::Rect& bbox,
                            float det_score) 
 {
     // 1. 归一化位置坐标
-    const double rel_x = (pt.x() - bbox.x) / bbox.width;
-    const double rel_y = (pt.y() - bbox.y) / bbox.height;
+    const double rel_x = (pt.x - bbox.x) / bbox.width;
+    const double rel_y = (pt.y - bbox.y) / bbox.height;
     
     // 2. 计算核心性风险（中心高风险）
     const double center_dist = std::sqrt(
@@ -690,7 +690,7 @@ double calculateDynamicRisk(const Eigen::Vector2d& pt,
         0.3 * proximity_risk
     );
     
-    return std::clamp(combined_risk, 0.0, 1.0);
+    return (combined_risk < 0.0) ? 0.0 : (combined_risk > 1.0) ? 1.0 : combined_risk;
 }
 
 // Processes frames

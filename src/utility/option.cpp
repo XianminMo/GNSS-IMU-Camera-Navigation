@@ -263,6 +263,7 @@ SensorType sensorType(std::string in)
   MAP_IN_RET("major", SensorType::IMU);
   MAP_IN_RET("major", SensorType::IMU);
   MAP_IN_RET("mono", SensorType::Camera);
+  MAP_IN_RET("primary", SensorType::YOLO); 
   MAP_IN_RET("stereo-major", SensorType::Camera);
   MAP_IN_RET("stereo-minor", SensorType::Camera);
   MAP_IN_RET("array", SensorType::Camera);
