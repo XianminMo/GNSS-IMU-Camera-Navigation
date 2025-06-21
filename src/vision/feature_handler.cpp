@@ -265,8 +265,7 @@ void FeatureHandler::detectFeatures(const FramePtr& frame)
     frame->grad_vec_.col(j) = new_grads.col(i);
     frame->score_vec_(j) = new_scores(i);
     frame->level_vec_(j) = new_levels(i);
-    frame->type_vec_[j] = FeatureType::kCorner;
-
+    frame->type_vec_[j] = FeatureType::kCorner; // 重复，可以考虑删除
     frame->landmark_vec_[j] = std::make_shared<Point>(Eigen::Vector3d::Zero());
     frame->track_id_vec_(j) = frame->landmark_vec_[j]->id();
     frame->landmark_vec_[j]->addObservation(frame, j);
@@ -339,7 +338,8 @@ void FeatureHandler::optimizePose()
     Transformation T_last_cur = Transformation(Quaternion(), t_last_cur * (dt2 / dt1));
     T_WS_aprox = last_frame->T_world_imu() * T_last_cur;
   }
-
+  
+  // 三个参数块：位姿、外参、地标 （7，4，7）
   // Pose of current frame
   BackendId pose_id = createNFrameId(frame->bundleId());
   std::shared_ptr<PoseParameterBlock> pose_parameter_block = 
@@ -378,11 +378,18 @@ void FeatureHandler::optimizePose()
 
     // Add reprojection errors
     Eigen::Matrix2d information = Eigen::Matrix2d::Identity();
+    
+    // 根据特征点所在金字塔层级去调整信息矩阵（权重），金字塔层级越高（分辨率越低），特征点的权重越低。
     information *= 1.0 / 
       static_cast<double>(1 << frame->level_vec_(kp_idx));
-    // we do not believe not-in-graph landmarks, relatively.
+    
+      // we do not believe not-in-graph landmarks, relatively.
     if (global_scale_initialized_ && !landmark->in_ba_graph_) information /= 1.0e4;
-
+    
+    // 根据kp的权重去修改信息矩阵，初始为1.0，若在检测框中则会根据kp的位置赋予不同的权重
+    information *= frame->weight_vec_(kp_idx);
+    
+    // 代价函数（重投影误差）构建
     std::shared_ptr<ReprojectionError> reprojection_error =
         std::make_shared<ReprojectionError>(
           frame->cam(),
@@ -620,37 +627,70 @@ void FeatureHandler::filterFeaturesByYOLO(
         const Eigen::Vector2d& px = frame->px_vec_.col(i);
         cv::Point2f pt(px.x(), px.y());
 
-        // 检查特征点是否在动态物体检测框内
+        bool in_dynamic_bbox = false;
+        double min_weight = 1.0;
+    
         for (const auto& det : yolo_detections) {
-            // 只处理动态物体且置信度足够高的检测
-            if (!isDynamicObject(det.label) || det.score < 0.5) {
+            // 只处理置信度>0.5的动态物体
+            if (!isDynamicObject(det.label) || det.score < 0.5f) 
                 continue;
-            }
-
-            // 计算检测框的中心区域和边缘区域
-            cv::Rect center_bbox = det.bbox;
-            center_bbox.x += det.bbox.width * 0.1;  // 缩小10%
-            center_bbox.y += det.bbox.height * 0.1;
-            center_bbox.width *= 0.8;
-            center_bbox.height *= 0.8;
-
-            cv::Rect edge_bbox = det.bbox;
-            edge_bbox.x += det.bbox.width * 0.05;  // 缩小5%
-            edge_bbox.y += det.bbox.height * 0.05;
-            edge_bbox.width *= 0.9;
-            edge_bbox.height *= 0.9;
-
-            // 根据特征点位置赋予权重
-            if (center_bbox.contains(pt)) {
-                frame->weight_vec_[i] = 0.0; // 高概率动态物体
-                frame->type_vec_[i] = FeatureType::kOutlier; // 标记为异常点
-            } else if (edge_bbox.contains(pt)) {
-                frame->weight_vec_[i] = 0.5; // 边缘区域，可能是背景
-            } else if (det.bbox.contains(pt)) {
-                frame->weight_vec_[i] = 0.8; // 靠近边缘，可能是遮挡
+            
+            // 检查点是否在检测框内
+            if (det.bbox.contains(pt)) {
+                in_dynamic_bbox = true;
+                const double risk = calculateDynamicRisk(pt, det.bbox, det.score);
+                const double new_weight = 1.0 - risk * 0.9; // 保留至少0.1权重
+                
+                // 取最小权重（最严格约束）
+                min_weight = std::min(min_weight, new_weight);
             }
         }
-    }
+        
+        // 应用动态加权
+        if (in_dynamic_bbox) {
+            frame->weights[i] = min_weight;
+            
+            // 核心区域点标记为可疑（非立即删除），后续做进一步的运动一致性检查
+            if (min_weight < 0.3) {
+                frame->types[i] = FeatureType::kSuspect;
+            }
+        }
+      }
+}
+
+// 双风险模型计算kp的动态风险指数，仅基于位置信息，后续考虑融合其他信息（如速度、加速度等）
+double calculateDynamicRisk(const Eigen::Vector2d& pt,
+                           const cv::Rect& bbox,
+                           float det_score) 
+{
+    // 1. 归一化位置坐标
+    const double rel_x = (pt.x() - bbox.x) / bbox.width;
+    const double rel_y = (pt.y() - bbox.y) / bbox.height;
+    
+    // 2. 计算核心性风险（中心高风险）
+    const double center_dist = std::sqrt(
+        std::pow(rel_x - 0.5, 2) + 
+        std::pow(rel_y - 0.5, 2)
+    ) * M_SQRT2; // 归一化到[0,1]
+    
+    // 中心区域风险陡增函数
+    const double centrality_risk = 1.0 / (1 + exp(-12*(0.6 - center_dist)));
+    
+    // 3. 计算邻近性风险（边界中风险）
+    const double edge_dist = std::min({
+        rel_x, 1.0 - rel_x,
+        rel_y, 1.0 - rel_y
+    });
+    // 边界风险缓增函数（0.2-0.8区间）
+    const double proximity_risk = 0.3 + 0.4 * (1.0 - 2 * edge_dist);
+    
+    // 4. 双风险合成
+    const double combined_risk = det_score * (
+        0.7 * centrality_risk + 
+        0.3 * proximity_risk
+    );
+    
+    return std::clamp(combined_risk, 0.0, 1.0);
 }
 
 // Processes frames

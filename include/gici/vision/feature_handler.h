@@ -188,6 +188,10 @@ private:
   void filterFeaturesByYOLO(
     const FramePtr& frame, 
     const std::vector<YoloDetection>& yolo_detections);
+  
+  double calculateDynamicRisk(const Eigen::Vector2d& pt,
+                           const cv::Rect& bbox,
+                           float det_score);
 
   void removeObservationFromPoint(PointPtr point, int frame_id, size_t feat_idx);
 
