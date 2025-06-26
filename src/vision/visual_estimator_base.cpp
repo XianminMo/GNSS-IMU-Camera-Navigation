@@ -147,6 +147,8 @@ ceres::ResidualBlockId VisualEstimatorBase::addReprojectionErrorResidualBlock(
     information /= square(visual_base_options_.feature_error_std * 
       static_cast<double>(1 << frame->level_vec_(keypoint_idx)));
   }
+  // 根据kp的权重去修改信息矩阵，初始为1.0，若在检测框中则会根据kp的位置赋予不同的权重
+  information *= frame->weight_vec_[keypoint_idx];
 
   // create error term
   std::shared_ptr<ReprojectionError> reprojection_error =
