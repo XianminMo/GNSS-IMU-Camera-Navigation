@@ -714,8 +714,9 @@ void MultiSensorEstimating::handleFrontendSensors(EstimatorDataCluster& data)
   } else if (data.yoloDetections) {
     mutex_yolo_input_.lock();
     yolo_frontend_measurements_.push_back(data);
-    LOG(INFO) << "Add YOLO detection data with tag: " 
-             << static_cast<int>(data.tag);
+    LOG(INFO) << "Add YOLO detection data"
+              << " at timestamp " << std::fixed << data.timestamp
+              << " with size " << data.yoloDetections.size();
     mutex_yolo_input_.unlock();
   }
 }
