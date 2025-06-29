@@ -899,7 +899,7 @@ void MultiSensorEstimating::runImageFrontend()
         LOG(INFO) << "Matching YOLO detections with timestamp: " 
           << std::fixed << front_measurement.timestamp << "yolo timestamp: " << std::fixed << best_it->timestamp;
 
-        double min_diff = std::abs(best_it.timestamp - front_measurement.timestamp);
+        double min_diff = std::abs(best_it->timestamp - front_measurement.timestamp);
         
         for (auto it = best_it + 1; it != yolo_frontend_measurements_.end(); ++it) {
             double diff = std::abs(it->timestamp - front_measurement.timestamp);
