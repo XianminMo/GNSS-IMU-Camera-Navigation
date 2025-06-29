@@ -20,6 +20,7 @@
 #include <svo/common/seed.h>
 #include <svo/common/conversions.h>
 #include "gici/vision/yolo_types.h"
+using gici::YoloDetection;
 
 namespace svo {
 

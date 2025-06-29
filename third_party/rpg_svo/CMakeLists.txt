@@ -47,6 +47,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
 # Link include directory
 target_include_directories(${PROJECT_NAME}
     PUBLIC ${PROJECT_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include  # 项目根目录的include
 )
 
 
