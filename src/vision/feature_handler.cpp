@@ -820,7 +820,12 @@ bool FeatureHandler::processFrame()
 
   // filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0));  
 
-  filterDynamicPointsByOpticalFlow(getLast(frame_bundles_)->at(0), getCurrent(frame_bundles_)->at(0));
+  if (frame_bundles_.size() > 1)
+  {
+    // Filter dynamic points by optical flow
+    filterDynamicPointsByOpticalFlow(
+      getLast(frame_bundles_)->at(0), getCurrent(frame_bundles_)->at(0));
+  }
   
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;
