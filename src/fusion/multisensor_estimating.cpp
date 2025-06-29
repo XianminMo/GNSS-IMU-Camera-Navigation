@@ -895,14 +895,14 @@ void MultiSensorEstimating::runImageFrontend()
 
     if (!yolo_frontend_measurements_.empty()) {
         // 直接遍历所有元素，找到最近的
-        EstimatorDataCluster&  best_it = yolo_frontend_measurements_.begin();
+        auto best_it = yolo_frontend_measurements_.begin();
         LOG(INFO) << "Matching YOLO detections with timestamp: " 
-          << std::fixed << front_measurement.timestamp << "yolo timestamp: " << std::fixed << best_it.timestamp;
+          << std::fixed << front_measurement.timestamp << "yolo timestamp: " << std::fixed << best_it->timestamp;
 
         double min_diff = std::abs(best_it.timestamp - front_measurement.timestamp);
         
-        for (EstimatorDataCluster&  it = best_it + 1; it != yolo_frontend_measurements_.end(); ++it) {
-            double diff = std::abs(it.timestamp - front_measurement.timestamp);
+        for (auto it = best_it + 1; it != yolo_frontend_measurements_.end(); ++it) {
+            double diff = std::abs(it->timestamp - front_measurement.timestamp);
             if (diff < min_diff) {
                 min_diff = diff;
                 best_it = it;
@@ -911,7 +911,7 @@ void MultiSensorEstimating::runImageFrontend()
         
         // 检查时间差是否在允许范围内(20ms)
         if (min_diff < 0.02) {
-            yolo_dets = *(best_it.yoloDetections);
+            yolo_dets = *(best_it->yoloDetections);
             LOG(INFO) << "Matched YOLO detections with timestamp: " 
               << std::fixed << front_measurement.timestamp;
             yolo_frontend_measurements_.erase(best_it);
