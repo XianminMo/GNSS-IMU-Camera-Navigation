@@ -136,6 +136,7 @@ private:
     if (data.gnss) num_data_type++;
     if (data.imu) num_data_type++;
     if (data.image) num_data_type++;
+    if (data.yoloDetections) num_data_type++;
     if (data.frame_bundle) num_data_type++;
     if (data.solution) num_data_type++;
     if (num_data_type > 1) {
