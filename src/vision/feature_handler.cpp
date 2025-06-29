@@ -703,9 +703,8 @@ double FeatureHandler::calculateDynamicRisk(const cv::Point2f& pt,
 void FeatureHandler::filterDynamicPointsByOpticalFlow(
     const FramePtr& ref_frame,
     const FramePtr& cur_frame,
-    const std::vector<YoloDetection>& yolo_detections,
     double similarity_threshold = 6.0, // 光流向量差异阈值
-    double dynamic_weight = 0.1        // 动态点的权重
+    double dynamic_weight = 0.1,        // 动态点的权重
     int min_points_per_detection = 3, // 每个检测框内至少需要的点数
     float min_object_score = 0.4 // YOLO检测框的最小置信度分数
 ) {
@@ -713,6 +712,10 @@ void FeatureHandler::filterDynamicPointsByOpticalFlow(
         LOG(ERROR) << "Invalid frame pointers";
         return;
     } 
+
+    std::vector<YoloDetection>& yolo_detections = cur_frame->yolo_detections_;
+    LOG(INFO) << "Filtering features by YOLO detections: "
+        << yolo_detections.size() << " detections found.";
     
     if (ref_frame->px_vec_.cols() == 0 || cur_frame->px_vec_.cols() == 0) {
         LOG(WARNING) << "No feature points in frame";

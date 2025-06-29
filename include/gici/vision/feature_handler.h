@@ -200,7 +200,6 @@ private:
   // This function filters out dynamic points based on optical flow vectors and YOLO detections
   void filterDynamicPointsByOpticalFlow(const FramePtr& ref_frame,
                                                         const FramePtr& cur_frame,
-                                                        const std::vector<YoloDetection>& yolo_detections,
                                                         double similarity_threshold = 6.0,
                                                         double dynamic_weight = 0.1,        
                                                         int min_points_per_detection = 3, 
