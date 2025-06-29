@@ -71,7 +71,8 @@ enum class FeatureType : uint8_t
   kMapPoint = 8,
   kFixedLandmark = 9,
   kOutlier = 10,
-  kDynamic = 11 // 动态特征点，可能会被删除或更新
+  kDynamic = 11,// 动态特征点，可能会被删除或更新
+  kStatic = 12 // 静态特征点，通常是地图点或稳定的角点
 };
 
 using FeatureTypes = std::vector<FeatureType>;

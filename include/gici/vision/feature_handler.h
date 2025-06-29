@@ -185,19 +185,34 @@ private:
   // Processes frames
   bool processFrame();
 
+  // improve
+  // filter features by YOLO detections
+  // This function filters out features that are not detected by YOLO
   void filterFeaturesByYOLO(const FramePtr& frame);
   
+  // calculate dynamic risk based on point position, bounding box, and detection score
+  // This function is used to determine if a point is likely to be a dynamic object
   double calculateDynamicRisk(const cv::Point2f& pt,
                            const cv::Rect& bbox,
                            float det_score);
+  
+  // filter dynamic points by optical flow
+  // This function filters out dynamic points based on optical flow vectors and YOLO detections
+  void filterDynamicPointsByOpticalFlow(const FramePtr& ref_frame,
+                                                        const FramePtr& cur_frame,
+                                                        const std::vector<YoloDetection>& yolo_detections,
+                                                        double similarity_threshold = 6.0,
+                                                        double dynamic_weight = 0.1        
+                                                        int min_points_per_detection = 3, 
+                                                        float min_object_score = 0.4);
 
-
-  // 动态物体标签列表（可根据需要扩展）
+  // dynamic labels for filtering
+  // These labels are considered dynamic objects, such as people, animals, vehicles, etc.
   const std::unordered_set<std::string> dynamic_labels_ = {
       "person", "cat", "dog", "bicycle", "car", "bus"
   };
   
-  // 辅助函数：检查是否动态物体
+  // helper function to check if a label is dynamic
   bool isDynamicObject(const std::string& label) const {
       return dynamic_labels_.find(label) != dynamic_labels_.end();
   }

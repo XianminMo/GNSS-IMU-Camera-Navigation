@@ -700,6 +700,109 @@ double FeatureHandler::calculateDynamicRisk(const cv::Point2f& pt,
     return (combined_risk < 0.0) ? 0.0 : (combined_risk > 1.0) ? 1.0 : combined_risk;
 }
 
+void FeatureHandler::filterDynamicPointsByOpticalFlow(
+    const FramePtr& ref_frame,
+    const FramePtr& cur_frame,
+    const std::vector<YoloDetection>& yolo_detections,
+    double similarity_threshold = 6.0, // 光流向量差异阈值
+    double dynamic_weight = 0.1        // 动态点的权重
+    int min_points_per_detection = 3, // 每个检测框内至少需要的点数
+    float min_object_score = 0.4 // YOLO检测框的最小置信度分数
+) {
+    if (!ref_frame || !cur_frame) {
+        LOG(ERROR) << "Invalid frame pointers";
+        return;
+    } 
+    
+    if (ref_frame->px_vec_.cols() == 0 || cur_frame->px_vec_.cols() == 0) {
+        LOG(WARNING) << "No feature points in frame";
+        return;
+    } 
+    
+    // 获取匹配的特征点对
+    std::vector<std::pair<size_t, size_t>> matches;
+    getFeatureMatches(*ref_frame, *cur_frame, &matches);
+
+    if (matches.empty()) {
+        LOG(WARNING) << "No feature matches found between frames";
+        return;
+    }
+
+    // 计算光流向量
+    std::vector<Eigen::Vector2d> flow_vectors(matches.size());
+    for (size_t i = 0; i < matches.size(); ++i) {
+        const Eigen::Vector2d& ref_px = ref_frame->px_vec_.col(matches[i].first);
+        const Eigen::Vector2d& cur_px = cur_frame->px_vec_.col(matches[i].second);
+        flow_vectors[i] = cur_px - ref_px; // 光流向量
+    }
+
+    std::vector<bool> is_dynamic(matches.size(), false);
+
+    // 遍历 YOLO 检测框
+    for (const auto& det : yolo_detections) {
+        if (!isDynamicObject(det.label) || det.score < min_object_score) continue;
+
+        cv::Rect bbox = det.bbox;
+        std::vector<size_t> points_in_bbox;
+
+        // 找到检测框内的特征点
+        for (size_t i = 0; i < matches.size(); ++i) {
+            const Eigen::Vector2d& cur_px = cur_frame->px_vec_.col(matches[i].second);
+            cv::Point2f pt(cur_px.x(), cur_px.y());
+            if (bbox.contains(pt)) {
+                points_in_bbox.push_back(i);
+            }
+        }
+
+        if (points_in_bbox.size() < static_cast<size_t>(min_points_per_detection)) continue;
+
+        // 计算检测框内光流向量的平均值
+        Eigen::Vector2d mean_flow(0.0, 0.0);
+        for (size_t idx : points_in_bbox) {
+            mean_flow += flow_vectors[idx];
+        }
+        mean_flow /= static_cast<double>(points_in_bbox.size());
+
+        if (mean_flow.norm() < 0.5) {
+            continue;
+        }
+
+        // 判断每个点的光流向量是否与平均值相近
+        for (size_t idx : points_in_bbox) {
+            // 计算欧式距离
+            double flow_diff = (flow_vectors[idx] - mean_flow).norm();
+            
+            // 计算余弦相似度
+            double direction_sim = 1.0;
+            if (flow_vectors[idx].norm() > 0.001 && mean_flow.norm() > 0.001) {
+                direction_sim = flow_vectors[idx].dot(mean_flow) / 
+                              (flow_vectors[idx].norm() * mean_flow.norm());
+            }
+            // 如果光流向量差异小于阈值且方向相似度高，则认为是动态点
+            if (flow_diff < similarity_threshold && direction_sim > 0.8) {
+                is_dynamic[idx] = true;
+            }
+        }
+    }
+
+    int dynamic_count = 0;
+    for (size_t i = 0; i < matches.size(); i++) {
+        size_t cur_idx = matches[i].second;
+        
+        if (is_dynamic[i]) {
+            // 动态点：设置低权重并标记为动态
+            cur_frame->weight_vec_[cur_idx] = dynamic_weight;
+            cur_frame->type_vec_[cur_idx] = FeatureType::kDynamic;
+            dynamic_count++;
+        }
+        // 保持静态点的默认权重
+    }
+    
+    // 12. 记录统计信息
+    VLOG(1) << "Marked " << dynamic_count << "/" << matches.size() 
+            << " points as dynamic";
+}
+
 // Processes frames
 bool FeatureHandler::processFrame()
 {
@@ -712,7 +815,10 @@ bool FeatureHandler::processFrame()
   // Detect features in new frame
   detectFeatures(getCurrent(frame_bundles_)->at(0));
 
-  filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0));
+  // filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0));  
+
+  filterDynamicPointsByOpticalFlow(getLast(frame_bundles_)->at(0), getCurrent(frame_bundles_)->at(0));
+  
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;
 
