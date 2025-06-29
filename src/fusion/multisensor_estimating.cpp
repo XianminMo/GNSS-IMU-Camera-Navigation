@@ -714,6 +714,8 @@ void MultiSensorEstimating::handleFrontendSensors(EstimatorDataCluster& data)
   } else if (data.yoloDetections) {
     mutex_yolo_input_.lock();
     yolo_frontend_measurements_.push_back(data);
+    LOG(INFO) << "Add YOLO detection data with tag: " 
+             << static_cast<int>(data.tag);
     mutex_yolo_input_.unlock();
   }
 }
@@ -886,9 +888,16 @@ void MultiSensorEstimating::runImageFrontend()
     // YOLO检测信息匹配
     std::vector<YoloDetection> yolo_dets;
     mutex_yolo_input_.lock();
+    if (yolo_frontend_measurements_.empty()) {
+        LOG(WARNING) << "No YOLO detections available for matching.";
+    }
+
     if (!yolo_frontend_measurements_.empty()) {
         // 直接遍历所有元素，找到最近的
         auto best_it = yolo_frontend_measurements_.begin();
+        LOG(INFO) << "Matching YOLO detections with timestamp: " 
+          << std::fixed << front_measurement.timestamp << "yolo timestamp: " << std::fixed << best_it->timestamp;
+
         double min_diff = std::abs(best_it->timestamp - front_measurement.timestamp);
         
         for (auto it = best_it + 1; it != yolo_frontend_measurements_.end(); ++it) {
@@ -902,8 +911,11 @@ void MultiSensorEstimating::runImageFrontend()
         // 检查时间差是否在允许范围内(20ms)
         if (min_diff < 0.02) {
             yolo_dets = *(best_it->yoloDetections);
+            LOG(INFO) << "Matched YOLO detections with timestamp: " 
+              << std::fixed << front_measurement.timestamp;
             yolo_frontend_measurements_.erase(best_it);
         }
+        LOG(INFO) << "YOLO detections size: " << yolo_dets.size();
     }
     mutex_yolo_input_.unlock();
 
