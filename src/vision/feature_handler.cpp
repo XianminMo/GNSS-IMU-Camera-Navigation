@@ -66,6 +66,9 @@ bool FeatureHandler::addImageBundle(
     frames.back()->setNFrameIndex(i);
     if (!yolo_dets.empty()) {
       frames.back()->setYoloDetections(yolo_dets);
+      LOG(INFO) << "Add " << yolo_dets.size() 
+        << " YOLO detections to frame " << frames.back()->id();
+        LOG(INFO) << "frame yolo detections: " << frames.back()->yolo_detections_.size();
     }
   }
   FrameBundlePtr frame_bundle(new FrameBundle(frames));
