@@ -19,6 +19,7 @@
 #include <svo/common/point.h>
 #include <svo/common/seed.h>
 #include <svo/common/conversions.h>
+#include "gici/vision/yolo_types.h"
 
 namespace svo {
 
@@ -133,11 +134,11 @@ public:
   FeatureWrapper getEmptyFeatureWrapper();
 
   // yolo
-  void setYoloDetections(const std::vector<YoloDetection>& yolo_dets) {
+  inline void setYoloDetections(const std::vector<YoloDetection>& yolo_dets) {
       yolo_detections_ = yolo_dets;
   }
 
-  const std::vector<YoloDetection>& getYoloDetections() const {
+  inline const std::vector<YoloDetection>& getYoloDetections() const {
       return yolo_detections_;
   }
 
