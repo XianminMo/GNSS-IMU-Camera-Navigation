@@ -936,10 +936,10 @@ void MultiSensorEstimating::runImageFrontend()
     bool ret = false;
     Transformation T_WS;
     if (!estimator_->getPoseEstimateAt(timestamp, T_WS)) {
-      ret = feature_handler_->addImageBundle({image}, timestamp);
+      ret = feature_handler_->addImageBundle({image}, timestamp, yolo_dets);
     }
     else {
-      ret = feature_handler_->addImageBundle({image}, timestamp, {T_WS});
+      ret = feature_handler_->addImageBundle({image}, timestamp, yolo_dets, {T_WS});
     }
     image_frontend_measurements_.pop_front();
     mutex_image_input_.unlock();
