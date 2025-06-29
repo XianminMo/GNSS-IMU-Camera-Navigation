@@ -42,7 +42,7 @@ FeatureHandler::~FeatureHandler()
 
 // Add images
 bool FeatureHandler::addImageBundle(
-  const std::vector<std::shared_ptr<cv::Mat>>& imgs, const double timestamp)
+  const std::vector<std::shared_ptr<cv::Mat>>& imgs, const double timestamp, const std::vector<YoloDetection>& yolo_dets)
 {
   if (!isFirstFrame())
   {
@@ -63,6 +63,7 @@ bool FeatureHandler::addImageBundle(
       static_cast<int64_t>(timestamp * 1.0e9), options_.max_pyramid_level + 1));
     frames.back()->set_T_cam_imu(cams_->get_T_C_B(i));
     frames.back()->setNFrameIndex(i);
+    frames.back()->setYoloDetections(yolo_dets);
   }
   FrameBundlePtr frame_bundle(new FrameBundle(frames));
 
@@ -77,9 +78,9 @@ bool FeatureHandler::addImageBundle(
 
 // Add images with poses
 bool FeatureHandler::addImageBundle(const std::vector<std::shared_ptr<cv::Mat>>& imgs, 
-                    const double timestamp, const std::vector<Transformation>& T_WSs)
+                    const double timestamp, const std::vector<YoloDetection>& yolo_dets, const std::vector<Transformation>& T_WSs)
 {
-  if (!addImageBundle(imgs, timestamp)) return false;
+  if (!addImageBundle(imgs, timestamp, yolo_dets)) return false;
 
   CHECK(T_WSs.size() == curFrames()->size());
   for (size_t i = 0; i < curFrames()->size(); i++) {
@@ -90,10 +91,10 @@ bool FeatureHandler::addImageBundle(const std::vector<std::shared_ptr<cv::Mat>>&
 } 
 
 // Process current added image bundle. Should be called after addImageBundle.
-bool FeatureHandler::processImageBundle(const std::vector<YoloDetection>& yolo_detections)
+bool FeatureHandler::processImageBundle()
 {
   // Perform detecting and tracking
-  bool ret = processFrameBundle(yolo_detections);
+  bool ret = processFrameBundle();
 
   // Shift memory
   frame_bundles_.push_back(std::make_shared<FrameBundle>(std::vector<FramePtr>()));
@@ -608,20 +609,21 @@ bool FeatureHandler::initializeScale()
 }
 
 // Processes frame bundle
-bool FeatureHandler::processFrameBundle(const std::vector<YoloDetection>& yolo_detections)
+bool FeatureHandler::processFrameBundle()
 {
   // currently we only support one camera
-  return processFrame(yolo_detections);
+  return processFrame();
 }
 
-void FeatureHandler::filterFeaturesByYOLO(
-    const FramePtr& frame, 
-    const std::vector<YoloDetection>& yolo_detections)
+void FeatureHandler::filterFeaturesByYOLO(const FramePtr& frame)
 {
-    if (yolo_detections.empty() || frame->numFeatures() == 0) {
+    if (frame->numFeatures() == 0) {
         return;
     }
-
+    std::vector<YoloDetection>& yolo_detections = frame->yolo_detections_;
+    LOG(INFO) << "Filtering features by YOLO detections: "
+        << yolo_detections.size() << " detections found.";
+    
     // 遍历所有特征点
     for (size_t i = 0; i < frame->numFeatures(); ++i) {
         const Eigen::Vector2d& px = frame->px_vec_.col(i);
@@ -638,6 +640,8 @@ void FeatureHandler::filterFeaturesByYOLO(
             // 检查点是否在检测框内
             if (det.bbox.contains(pt)) {
                 in_dynamic_bbox = true;
+                LOG(INFO) << "Point " << pt << " is in dynamic bbox: "
+                    << det.bbox << " with score: " << det.score;
                 const double risk = calculateDynamicRisk(pt, det.bbox, det.score);
                 const double new_weight = 1.0 - risk * 0.9; // 保留至少0.1权重
                 
@@ -694,16 +698,8 @@ double FeatureHandler::calculateDynamicRisk(const cv::Point2f& pt,
 }
 
 // Processes frames
-bool FeatureHandler::processFrame(const std::vector<YoloDetection>& yolo_detections)
+bool FeatureHandler::processFrame()
 {
-  // 更新YOLO检测结果
-  {
-      std::lock_guard<std::mutex> lock(yolo_mutex_);
-      if (!yolo_detections.empty()) {
-          last_yolo_detections_ = yolo_detections;
-      }
-  }
-
   // Reset grid
   detector_->grid_.reset();
 
@@ -713,13 +709,7 @@ bool FeatureHandler::processFrame(const std::vector<YoloDetection>& yolo_detecti
   // Detect features in new frame
   detectFeatures(getCurrent(frame_bundles_)->at(0));
 
-  // 使用YOLO检测结果筛选特征点
-  {
-      std::lock_guard<std::mutex> lock(yolo_mutex_);
-      if (!last_yolo_detections_.empty()) {
-          filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0), last_yolo_detections_);
-      }
-  }
+  filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0))
 
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;

@@ -944,7 +944,7 @@ void MultiSensorEstimating::runImageFrontend()
     image_frontend_measurements_.pop_front();
     mutex_image_input_.unlock();
     if (ret) {
-      ret = feature_handler_->processImageBundle(yolo_dets);
+      ret = feature_handler_->processImageBundle();
     }
     if (ret) {
       FrameBundlePtr frame_bundle = feature_handler_->getFrameBundle();

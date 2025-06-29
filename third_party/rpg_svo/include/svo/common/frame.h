@@ -73,6 +73,7 @@ public:
   SeedRefs seed_ref_vec_;       ///< Only for seeds during reprojection
   SeedStates invmu_sigma2_a_b_vec_; ///< Vector containing all necessary information for seed update.
   std::vector<bool> in_ba_graph_vec_;
+  std::vector<YoloDetection> yolo_detections_; // yolo检测结果
   // }
 
   FloatType seed_mu_range_;
@@ -130,6 +131,15 @@ public:
   FeatureWrapper getFeatureWrapper(size_t idx);
 
   FeatureWrapper getEmptyFeatureWrapper();
+
+  // yolo
+  void setYoloDetections(const std::vector<YoloDetection>& yolo_dets) {
+      yolo_detections_ = yolo_dets;
+  }
+
+  const std::vector<YoloDetection>& getYoloDetections() const {
+      return yolo_detections_;
+  }
 
   /// Get depth at seed.
   inline FloatType getSeedDepth(size_t idx) const {

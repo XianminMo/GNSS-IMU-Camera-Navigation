@@ -83,14 +83,14 @@ public:
 
   // Add images
   bool addImageBundle(const std::vector<std::shared_ptr<cv::Mat>>& imgs, 
-                      const double timestamp);
+                      const double timestamp, const std::vector<YoloDetection>& yolo_dets);
 
   // Add images with poses
   bool addImageBundle(const std::vector<std::shared_ptr<cv::Mat>>& imgs, 
-                      const double timestamp, const std::vector<Transformation>& T_WSs);
+                      const double timestamp, const std::vector<YoloDetection>& yolo_dets, const std::vector<Transformation>& T_WSs);
 
   // Process current added image bundle. Should be called after addImageBundle.
-  bool processImageBundle(const std::vector<YoloDetection>& yolo_detections = {});
+  bool processImageBundle();
 
   // Initialize landmarks 
   void initializeLandmarks(const FramePtr& keyframe);
@@ -180,14 +180,12 @@ private:
   bool initializeScale();
 
   // Processes frame bundle
-  bool processFrameBundle(const std::vector<YoloDetection>& yolo_detections = {});
+  bool processFrameBundle();
 
   // Processes frames
-  bool processFrame(const std::vector<YoloDetection>& yolo_detections = {});
+  bool processFrame();
 
-  void filterFeaturesByYOLO(
-    const FramePtr& frame, 
-    const std::vector<YoloDetection>& yolo_detections);
+  void filterFeaturesByYOLO(const FramePtr& frame);
   
   double calculateDynamicRisk(const cv::Point2f& pt,
                            const cv::Rect& bbox,
@@ -210,10 +208,6 @@ protected:
 
   // Camera model
   CameraBundlePtr cams_;
-  
-  // YOLO
-  std::vector<YoloDetection> last_yolo_detections_;
-  std::mutex yolo_mutex_;
 
   // Frames
   std::deque<FrameBundlePtr> frame_bundles_;
