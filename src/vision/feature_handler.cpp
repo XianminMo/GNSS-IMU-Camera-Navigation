@@ -42,7 +42,8 @@ FeatureHandler::~FeatureHandler()
 
 // Add images
 bool FeatureHandler::addImageBundle(
-  const std::vector<std::shared_ptr<cv::Mat>>& imgs, const double timestamp, const std::vector<YoloDetection>& yolo_dets)
+  const std::vector<std::shared_ptr<cv::Mat>>& imgs, const double timestamp, 
+  const std::vector<YoloDetection>& yolo_dets = std::vector<YoloDetection>())
 {
   if (!isFirstFrame())
   {
@@ -63,7 +64,9 @@ bool FeatureHandler::addImageBundle(
       static_cast<int64_t>(timestamp * 1.0e9), options_.max_pyramid_level + 1));
     frames.back()->set_T_cam_imu(cams_->get_T_C_B(i));
     frames.back()->setNFrameIndex(i);
-    frames.back()->setYoloDetections(yolo_dets);
+    if (!yolo_dets.empty()) {
+      frames.back()->setYoloDetections(yolo_dets);
+    }
   }
   FrameBundlePtr frame_bundle(new FrameBundle(frames));
 
