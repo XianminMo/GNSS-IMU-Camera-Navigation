@@ -722,10 +722,10 @@ bool MultiSensorSingleThreadEstimating::processImageFrontend(
   bool ret = false;
   Transformation T_WS;
   if (!estimator_->getPoseEstimateAt(timestamp, T_WS)) {
-    ret = feature_handler_->addImageBundle({image}, timestamp);
+    ret = feature_handler_->addImageBundle({image}, timestamp, {});
   }
   else {
-    ret = feature_handler_->addImageBundle({image}, timestamp, {T_WS});
+    ret = feature_handler_->addImageBundle({image}, timestamp, {}, {T_WS});
   }
   if (ret) {
     ret = feature_handler_->processImageBundle();

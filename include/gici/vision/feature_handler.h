@@ -202,7 +202,7 @@ private:
                                                         const FramePtr& cur_frame,
                                                         const std::vector<YoloDetection>& yolo_detections,
                                                         double similarity_threshold = 6.0,
-                                                        double dynamic_weight = 0.1        
+                                                        double dynamic_weight = 0.1,        
                                                         int min_points_per_detection = 3, 
                                                         float min_object_score = 0.4);
 
