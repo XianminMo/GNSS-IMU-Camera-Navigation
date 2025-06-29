@@ -709,8 +709,7 @@ bool FeatureHandler::processFrame()
   // Detect features in new frame
   detectFeatures(getCurrent(frame_bundles_)->at(0));
 
-  filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0))
-
+  filterFeaturesByYOLO(getCurrent(frame_bundles_)->at(0));
   // Select keyframe
   if(!needKeyFrame(map_->getLastKeyframe(), curFrame())) return true;
 
