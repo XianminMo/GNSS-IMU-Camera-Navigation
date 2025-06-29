@@ -19,6 +19,8 @@
 #include "gici/fusion/rtk_imu_tc_estimator.h"
 #include "gici/fusion/gnss_imu_camera_srr_estimator.h"
 #include "gici/fusion/rtk_imu_camera_rrr_estimator.h"
+#include <thread>
+#include <chrono>
 
 namespace gici {
 
@@ -889,6 +891,7 @@ void MultiSensorEstimating::runImageFrontend()
     }
 
     // YOLO检测信息匹配
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
     std::vector<YoloDetection> yolo_dets;
     mutex_yolo_input_.lock();
     if (yolo_frontend_measurements_.empty()) {
