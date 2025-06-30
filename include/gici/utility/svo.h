@@ -86,6 +86,8 @@ inline void changeFeatureTypeToSeed(FeatureType& t)
     t = FeatureType::kEdgeletSeed;
   else if(t == FeatureType::kMapPoint)
     t = FeatureType::kMapPointSeed;
+  else if(t == FeatureType::kDynamic)
+    t = FeatureType::kDynamic;
   else
     LOG(ERROR) << "Unknown feature types: " << static_cast<int>(t);
 }
