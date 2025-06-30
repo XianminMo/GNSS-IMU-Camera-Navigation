@@ -19,8 +19,6 @@
 #include "gici/fusion/rtk_imu_tc_estimator.h"
 #include "gici/fusion/gnss_imu_camera_srr_estimator.h"
 #include "gici/fusion/rtk_imu_camera_rrr_estimator.h"
-#include <thread>
-#include <chrono>
 
 namespace gici {
 
@@ -712,8 +710,6 @@ void MultiSensorEstimating::handleFrontendSensors(EstimatorDataCluster& data)
   if (data.image) {
     mutex_image_input_.lock();
     image_frontend_measurements_.push_back(data);
-    LOG(INFO) << "Add image data at timestamp " << std::fixed << data.timestamp
-              << " with size " << data.image->size();
     mutex_image_input_.unlock();
   } else if (data.yoloDetections) {
     mutex_yolo_input_.lock();
@@ -891,39 +887,44 @@ void MultiSensorEstimating::runImageFrontend()
     }
 
     // YOLO检测信息匹配
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    std::vector<YoloDetection> yolo_dets;
+    double image_ts = front_measurement.timestamp;
     mutex_yolo_input_.lock();
-    if (yolo_frontend_measurements_.empty()) {
-        LOG(WARNING) << "No YOLO detections available for matching.";
+
+    if (!yolo_frontend_measurements_.empty() && 
+        yolo_frontend_measurements_.back().timestamp < image_ts - kMaxWaitTime) {
+      LOG(WARNING) << "Timeout waiting for YOLO match for image timestamp: " << image_ts;
+      image_frontend_measurements_.pop_front();  // 丢掉
+      mutex_yolo_input_.unlock();
+      mutex_image_input_.unlock();
+      spin.sleep(); continue;
     }
 
-    if (!yolo_frontend_measurements_.empty()) {
-        // 直接遍历所有元素，找到最近的
-        auto best_it = yolo_frontend_measurements_.begin();
-        LOG(INFO) << "Matching YOLO detections with timestamp: " 
-          << std::fixed << front_measurement.timestamp << "yolo timestamp: " << std::fixed << best_it->timestamp;
-
-        double min_diff = std::abs(best_it->timestamp - front_measurement.timestamp);
-        
-        for (auto it = best_it + 1; it != yolo_frontend_measurements_.end(); ++it) {
-            double diff = std::abs(it->timestamp - front_measurement.timestamp);
-            if (diff < min_diff) {
-                min_diff = diff;
-                best_it = it;
-            }
-        }
-        
-        // 检查时间差是否在允许范围内(20ms)
-        if (min_diff < 0.02) {
-            yolo_dets = *(best_it->yoloDetections);
-            LOG(INFO) << "Matched YOLO detections with timestamp: " 
-              << std::fixed << front_measurement.timestamp;
-            yolo_frontend_measurements_.erase(best_it);
-        }
-        LOG(INFO) << "YOLO detections size: " << yolo_dets.size();
+    // 查找最近的 YOLO
+    auto best_it = yolo_frontend_measurements_.end();
+    double min_diff = 1e9;
+    for (auto it = yolo_frontend_measurements_.begin(); it != yolo_frontend_measurements_.end(); ++it) {
+      double diff = std::abs(it->timestamp - image_ts);
+      if (diff < min_diff) {
+        min_diff = diff;
+        best_it = it;
+      }
     }
-    mutex_yolo_input_.unlock();
+
+    std::vector<YoloDetection> yolo_dets;
+    if (best_it != yolo_frontend_measurements_.end() && min_diff < 0.02) {
+      yolo_dets = *(best_it->yoloDetections);
+      LOG(INFO) << "YoloDetection matched"
+                << " for image timestamp: " << image_ts
+                << ", with size: " << yolo_dets.size()
+                << ", yolo timestamp: " << best_it->timestamp;
+      yolo_frontend_measurements_.erase(best_it);
+    } else {
+      // 没匹配上，暂不 pop image
+      LOG(INFO) << "No matching YOLO for image timestamp: " << image_ts << ", wait more.";
+      mutex_yolo_input_.unlock();
+      mutex_image_input_.unlock();
+      spin.sleep(); continue;
+    }
 
     // Check if timestamp is valid
     if (!feature_handler_->isFirstFrame() && 
