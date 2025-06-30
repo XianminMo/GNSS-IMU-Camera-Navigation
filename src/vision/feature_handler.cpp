@@ -741,6 +741,8 @@ void FeatureHandler::filterDynamicPointsByOpticalFlow(
         const Eigen::Vector2d& cur_px = cur_frame->px_vec_.col(matches[i].second);
         flow_vectors[i] = cur_px - ref_px; // 光流向量
     }
+    LOG(INFO) << "matches.size(): " << matches.size();
+    LOG(INFO) << "flow_vectors.size(): " << flow_vectors.size();
 
     std::vector<bool> is_dynamic(matches.size(), false);
 
@@ -783,6 +785,10 @@ void FeatureHandler::filterDynamicPointsByOpticalFlow(
             if (flow_vectors[idx].norm() > 0.001 && mean_flow.norm() > 0.001) {
                 direction_sim = flow_vectors[idx].dot(mean_flow) / 
                               (flow_vectors[idx].norm() * mean_flow.norm());
+                if (idx == 1) {
+                    LOG(INFO) << "idx:" << idx << ", flow_diff: " << flow_diff 
+                              << ", direction_sim: " << direction_sim;
+                }
             }
             // 如果光流向量差异小于阈值且方向相似度高，则认为是动态点
             if (flow_diff < similarity_threshold && direction_sim > 0.8) {
@@ -805,7 +811,7 @@ void FeatureHandler::filterDynamicPointsByOpticalFlow(
     }
     
     // 12. 记录统计信息
-    VLOG(1) << "Marked " << dynamic_count << "/" << matches.size() 
+    LOG(INFO) << "Marked " << dynamic_count << "/" << matches.size() 
             << " points as dynamic";
 }
 
