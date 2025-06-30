@@ -872,60 +872,70 @@ bool MultiSensorEstimating::processEstimator()
 void MultiSensorEstimating::runImageFrontend()
 {
   SpinControl spin(1.0e-4);
-  const double kMaxWaitTime = 0.05;  // 最长等 50ms
   while (!quit_thread_ && SpinControl::ok()) {
-    // Check if we have new image data
     mutex_image_input_.lock();
-    if (image_frontend_measurements_.size() == 0) {
-      mutex_image_input_.unlock(); 
-      spin.sleep(); continue;
-    }
-    EstimatorDataCluster& front_measurement = image_frontend_measurements_.front();
-    if (front_measurement.image_role != CameraRole::Mono) {
-      image_frontend_measurements_.pop_front();
-      mutex_image_input_.unlock(); 
-      spin.sleep(); continue;
-    }
-
-    // YOLO检测信息匹配
-    double image_ts = front_measurement.timestamp;
-    mutex_yolo_input_.lock();
-
-    if (!yolo_frontend_measurements_.empty() && 
-        yolo_frontend_measurements_.back().timestamp < image_ts - kMaxWaitTime) {
-      LOG(WARNING) << "Timeout waiting for YOLO match for image timestamp: " << image_ts;
-      image_frontend_measurements_.pop_front();  // 丢掉
-      mutex_yolo_input_.unlock();
+    if (image_frontend_measurements_.empty()) {
       mutex_image_input_.unlock();
       spin.sleep(); continue;
     }
 
-    // 查找最近的 YOLO
-    auto best_it = yolo_frontend_measurements_.end();
-    double min_diff = 1e9;
-    for (auto it = yolo_frontend_measurements_.begin(); it != yolo_frontend_measurements_.end(); ++it) {
-      double diff = std::abs(it->timestamp - image_ts);
-      if (diff < min_diff) {
-        min_diff = diff;
-        best_it = it;
+    EstimatorDataCluster& front_measurement = image_frontend_measurements_.front();
+
+    if (front_measurement.image_role != CameraRole::Mono) {
+      image_frontend_measurements_.pop_front();
+      mutex_image_input_.unlock();
+      spin.sleep(); continue;
+    }
+
+    double image_ts = front_measurement.timestamp;
+
+    // === 轻等待：检测 YOLO 队列是否足够新 ===
+    bool yolo_data_fresh_enough = false;
+    {
+      std::lock_guard<std::mutex> lock(mutex_yolo_input_);
+      if (!yolo_frontend_measurements_.empty()) {
+        double yolo_latest_ts = yolo_frontend_measurements_.back().timestamp;
+        if (yolo_latest_ts >= image_ts - 0.02) { // 有希望匹配
+          yolo_data_fresh_enough = true;
+        }
       }
     }
 
-    std::vector<YoloDetection> yolo_dets;
-    if (best_it != yolo_frontend_measurements_.end() && min_diff < 0.02) {
-      yolo_dets = *(best_it->yoloDetections);
-      LOG(INFO) << "YoloDetection matched"
-                << " for image timestamp: " << image_ts
-                << ", with size: " << yolo_dets.size()
-                << ", yolo timestamp: " << best_it->timestamp;
-      yolo_frontend_measurements_.erase(best_it);
-    } else {
-      // 没匹配上，暂不 pop image
-      LOG(INFO) << "No matching YOLO for image timestamp: " << image_ts << ", wait more.";
-      mutex_yolo_input_.unlock();
+    if (!yolo_data_fresh_enough) {
       mutex_image_input_.unlock();
-      spin.sleep(); continue;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      continue;  // 稍等 YOLO
     }
+
+    // === YOLO 检测信息匹配 ===
+    std::vector<YoloDetection> yolo_dets;
+    mutex_yolo_input_.lock();
+    if (!yolo_frontend_measurements_.empty()) {
+      auto best_it = yolo_frontend_measurements_.begin();
+      double min_diff = std::abs(best_it->timestamp - image_ts);
+
+      for (auto it = best_it + 1; it != yolo_frontend_measurements_.end(); ++it) {
+        double diff = std::abs(it->timestamp - image_ts);
+        if (diff < min_diff) {
+          min_diff = diff;
+          best_it = it;
+        }
+      }
+
+      if (min_diff < 0.02) {
+        yolo_dets = *(best_it->yoloDetections);
+        LOG(INFO) << "YOLO matched for image @" << image_ts
+                  << ", YOLO ts: " << best_it->timestamp
+                  << ", diff: " << min_diff
+                  << ", size: " << yolo_dets.size();
+        yolo_frontend_measurements_.erase(best_it);
+      } else {
+        LOG(INFO) << "No YOLO match for image @" << image_ts << " (min diff = " << min_diff << ")";
+      }
+    } else {
+      LOG(INFO) << "YOLO queue empty for image @" << image_ts;
+    }
+    mutex_yolo_input_.unlock();
 
     // Check if timestamp is valid
     if (!feature_handler_->isFirstFrame() && 
