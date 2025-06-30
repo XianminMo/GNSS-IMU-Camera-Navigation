@@ -872,6 +872,7 @@ bool MultiSensorEstimating::processEstimator()
 void MultiSensorEstimating::runImageFrontend()
 {
   SpinControl spin(1.0e-4);
+  const double kMaxWaitTime = 0.05;  // 最长等 50ms
   while (!quit_thread_ && SpinControl::ok()) {
     // Check if we have new image data
     mutex_image_input_.lock();
